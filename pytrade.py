@@ -8,51 +8,40 @@ import matplotlib.pyplot as plt
 import numpy as np
 from datetime import datetime
 import os
+import argparse
 
 class Strategy:
 
     def __init__(self, indicator_name, strategy_name, pair, interval, klines):
-        #Name of indicator
         self.indicator = indicator_name
-        #Name of strategy being used
         self.strategy = strategy_name
-        #Trading pair
         self.pair = pair
-        #Trading interval
         self.interval = interval
-        #Kline data for the pair on given interval
         self.klines = klines
-        #Calculates the indicator
-        self.indicator_result = self.calculateIndicator()
-        #Uses the indicator to run strategy
-        self.strategy_result = self.calculateStrategy()
+        self.indicator_result = self.calculate_indicator()
+        self.strategy_result = self.calculate_strategy()
 
-
-    '''
-    Calculates the desired indicator given the init parameters
-    '''
-    def calculateIndicator(self):
+    def calculate_indicator(self):
         if self.indicator == 'MACD':
+            close_array = np.asarray([float(entry[4]) for entry in self.klines])
+            macd, macdsignal, macdhist = ta.MACD(close_array, fastperiod=12, slowperiod=26, signalperiod=9)
+
+            return [macd, macdsignal, macdhist]
+
+        elif self.indicator == 'RSI':
             close = [float(entry[4]) for entry in self.klines]
             close_array = np.asarray(close)
 
-            macd, macdsignal, macdhist = ta.MACD(close_array, fastperiod=12, slowperiod=26, signalperiod=9)
-            return [macd, macdsignal, macdhist]
-
+            return ta.RSI(close_array, timeperiod=14)
         else:
             return None
 
-
-    '''
-    Runs the desired strategy given the indicator results
-    '''
-    def calculateStrategy(self):
+    def calculate_strategy(self):
         if self.indicator == 'MACD':
 
             if self.strategy == 'CROSS':
                 open_time = [int(entry[0]) for entry in self.klines]
-                new_time = [datetime.fromtimestamp(time / 1000) for time in open_time]
-                self.time = new_time
+                self.time = [datetime.fromtimestamp(time / 1000) for time in open_time]
                 crosses = []
                 macdabove = False
                 #Runs through each timestamp in order
@@ -65,101 +54,47 @@ class Strategy:
                             if macdabove == False:
                                 macdabove = True
                                 #Appends the timestamp, MACD value at the timestamp, color of dot, buy signal, and the buy price
-                                cross = [new_time[i],self.indicator_result[0][i] , 'go', 'BUY', self.klines[i][4]]
-                                crosses.append(cross)
+                                crosses.append([self.time[i],self.indicator_result[0][i] , 'go', 'BUY', self.klines[i][4]])
                         else:
                             if macdabove == True:
                                 macdabove = False
                                 #Appends the timestamp, MACD value at the timestamp, color of dot, sell signal, and the sell price
-                                cross = [new_time[i], self.indicator_result[0][i], 'ro', 'SELL', self.klines[i][4]]
-                                crosses.append(cross)
+                                crosses.append([self.time[i], self.indicator_result[0][i], 'ro', 'SELL', self.klines[i][4]])
                 return crosses
 
             else:
                 return None
         elif self.indicator == 'RSI':
             if self.strategy == '7030':
-                open_time = [int(entry[0]) for entry in self.klines]
-                new_time = [datetime.fromtimestamp(time / 1000) for time in open_time]
-                self.time = new_time
-                result = []
-                active_buy = False
-                # Runs through each timestamp in order
-                for i in range(len(self.indicator_result)):
-                    if np.isnan(self.indicator_result[i]):
-                        pass
-                    # If the RSI is well defined, check if over 70 or under 30
-                    else:
-                        if float(self.indicator_result[i]) < 30 and active_buy == False:
-                            # Appends the timestamp, RSI value at the timestamp, color of dot, buy signal, and the buy price
-                            entry = [new_time[i], self.indicator_result[i], 'go', 'BUY', self.klines[i][4]]
-                            result.append(entry)
-                            active_buy = True
-                        elif float(self.indicator_result[i]) > 70 and active_buy == True:
-                            # Appends the timestamp, RSI value at the timestamp, color of dot, sell signal, and the sell price
-                            entry = [new_time[i], self.indicator_result[i], 'ro', 'SELL', self.klines[i][4]]
-                            result.append(entry)
-                            active_buy = False
-                return result
+                return self.calculateRsi(70, 30)
             elif self.strategy == '8020':
-                open_time = [int(entry[0]) for entry in self.klines]
-                new_time = [datetime.fromtimestamp(time / 1000) for time in open_time]
-                self.time = new_time
-                result = []
-                active_buy = False
-                # Runs through each timestamp in order
-                for i in range(len(self.indicator_result)):
-                    if np.isnan(self.indicator_result[i]):
-                        pass
-                    # If the RSI is well defined, check if over 80 or under 20
-                    else:
-                        if float(self.indicator_result[i]) < 20 and active_buy == False:
-                            # Appends the timestamp, RSI value at the timestamp, color of dot, buy signal, and the buy price
-                            entry = [new_time[i], self.indicator_result[i], 'go', 'BUY', self.klines[i][4]]
-                            result.append(entry)
-                            active_buy = True
-                        elif float(self.indicator_result[i]) > 80 and active_buy == True:
-                            # Appends the timestamp, RSI value at the timestamp, color of dot, sell signal, and the sell price
-                            entry = [new_time[i], self.indicator_result[i], 'ro', 'SELL', self.klines[i][4]]
-                            result.append(entry)
-                            active_buy = False
-                return result
+                return self.calculateRsi(80, 20)
         else:
             return None
 
-    '''
-    Getter for the strategy result
-    '''
-    def getStrategyResult(self):
-        return self.strategy_result
+    def calculateRsi(self, high, low):
+        open_time = [int(entry[0]) for entry in self.klines]
+        new_time = [datetime.fromtimestamp(time / 1000) for time in open_time]
+        self.time = new_time
+        result = []
+        active_buy = False
+        # Runs through each timestamp in order
+        for i in range(len(self.indicator_result)):
+            if np.isnan(self.indicator_result[i]):
+                pass
+            # If the RSI is well defined, check if over 70 or under 30
+            else:
+                if float(self.indicator_result[i]) < low and active_buy == False:
+                    # Appends the timestamp, RSI value at the timestamp, color of dot, buy signal, and the buy price
+                    result.append([new_time[i], self.indicator_result[i], 'go', 'BUY', self.klines[i][4]])
+                    active_buy = True
+                elif float(self.indicator_result[i]) > high and active_buy == True:
+                    # Appends the timestamp, RSI value at the timestamp, color of dot, sell signal, and the sell price
+                    result.append([new_time[i], self.indicator_result[i], 'ro', 'SELL', self.klines[i][4]])
+                    active_buy = False
 
-    '''
-    Getter for the klines
-    '''
-    def getKlines(self):
-        return self.klines
+        return result
 
-    '''
-    Getter for the trading pair
-    '''
-    def getPair(self):
-        return self.pair
-
-    '''
-    Getter for the trading interval
-    '''
-    def getInterval(self):
-        return self.interval
-
-    '''
-    Getter for the time list
-    '''
-    def getTime(self):
-        return self.time
-
-    '''
-    Plots the desired indicator with strategy buy and sell points
-    '''
     def plotIndicator(self):
         open_time = [int(entry[0]) for entry in self.klines]
         new_time = [datetime.fromtimestamp(time / 1000) for time in open_time]
@@ -177,47 +112,34 @@ class Strategy:
         else:
             pass
 
-        title = self.indicator + " Plot for " + self.pair + " on " + self.interval
-        plt.title(title)
+        plt.title(f"{self.indicator} Plot for {self.pair} on {self.interval}")
         plt.xlabel("Open Time")
         plt.ylabel("Value")
         plt.legend()
         plt.show()
 
 class Backtest:
-    def __init__(self, starting_amount, start_datetime, end_datetime, strategy):
-        #Starting amount
+    def __init__(self, starting_amount, start_datetime, end_datetime, strategy, verbose):
+        self.verbose = verbose
         self.start = starting_amount
-        #Number of trades
         self.num_trades = 0
-        #Number of profitable trades
         self.profitable_trades = 0
-        #Running amount
         self.amount = self.start
-        #Start of desired interval
         self.startTime = start_datetime
-        #End of desired interval
         self.endTime = end_datetime
-        #Strategy object
         self.strategy = strategy
-        #Trading pair
-        self.pair = self.strategy.getPair()
-        #Trading interval
-        self.interval = self.strategy.getInterval()
-        #Outputs the trades exectued
+        self.interval = self.strategy.interval
         self.trades = []
-        #Runs the backtest
-        self.results = self.runBacktest()
-        #Prints the results
+        self.runBacktest()
         self.printResults()
 
 
     def runBacktest(self):
         amount = self.start
-        klines = self.strategy.getKlines()
-        time = self.strategy.getTime()
+        klines = self.strategy.klines
+        time = self.strategy.time
         point_finder = 0
-        strategy_result = self.strategy.getStrategyResult()
+        strategy_result = self.strategy.strategy_result
         #Finds the first cross point within the desired backtest interval
         while strategy_result[point_finder][0] < self.startTime:
             point_finder += 1
@@ -246,39 +168,64 @@ class Backtest:
                     point_finder += 1
         self.amount = amount
 
-    '''
-    Prints the results of the backtest
-    '''
     def printResults(self):
-        print("Trading Pair: " + self.pair)
-        print("Interval: " + self.interval)
-        print("Ending amount: " + str(self.amount))
-        print("Number of Trades: " + str(self.num_trades))
-        profitable = self.profitable_trades / self.num_trades * 100
-        print("Percentage of Profitable Trades: " + str(profitable) + "%")
-        percent = self.amount / self.start * 100
-        print(str(percent) + "% of starting amount")
-        for entry in self.trades:
-            print(entry[0] + " at " + str(entry[1]))
+        print(f"\nTrading Pair: {self.strategy.pair}")
+        print(f"Indicator: {self.strategy.indicator}")
+        print(f"Strategy: {self.strategy.strategy}")
+        print(f"Interval: {self.interval}")
+        print(f"Ending amount: {str(self.amount)}")
+        print(f"Number of Trades: {str(self.num_trades)}")
+        if self.num_trades > 0:
+            print(f"Percentage of Profitable Trades: {str(self.profitable_trades / self.num_trades * 100)}%")
+        print(f"{str(self.amount / self.start * 100)}% of starting amount")
+        if self.verbose:
+            for i in range(len(self.trades)):
+                if i > 0 and self.trades[i][0] == "SELL":
+                    print(f"{self.trades[i][0]} at {str(self.trades[i][1])} | {int(((self.trades[i][1] / self.trades[i - 1][1]) * 100) - 100)}%")
+                else:
+                    print(f"{self.trades[i][0]} at {str(self.trades[i][1])}")
 
 class Pytrade():
     def __init__(self):
-        self.symbol:str = "ETHBTC"
-        self.kline_interval:str = "15m"
+
+        args = self.get_args()
+
+        self.symbol:str = args.symbol
+        self.kline_interval:str = args.interval
         self.api_key:str = os.environ["BINANCE_API_KEY"]
         self.api_secret:str = os.environ["BINANCE_API_SECRET"]
 
-        # Binance connection setup
+        #Binance connection setup
         self.client = Client(self.api_key, self.api_secret)
 
-        #self.open_ticker_socket(self.symbol)
+        print(f"Getting data for {args.symbol} starting {args.startTime}...\n")
+        klines = self.client.get_historical_klines(symbol=self.symbol,interval=self.kline_interval, start_str=args.startTime)
 
-        klines = self.client.get_klines(symbol=self.symbol,interval=self.kline_interval)
+        print("Loading strategies...\n")
+        strategies = [
+            Strategy('MACD', 'CROSS', self.symbol, self.kline_interval, klines),
+            Strategy('RSI', '7030', self.symbol, self.kline_interval, klines),
+            Strategy('RSI', '8020', self.symbol, self.kline_interval, klines)
+        ]
 
-        macd_strategy = Strategy('MACD', 'CROSS', self.symbol, self.kline_interval, klines)
-        macd_strategy.plotIndicator()
-        time = macd_strategy.getTime()
-        macd_backtest = Backtest(10000, time[0], time[len(time)-1], macd_strategy)
+        if args.graph:
+            print("Rendering graphs\n")
+            for strategy in strategies:
+                strategy.plotIndicator()
+
+        print("Backtesting strategies...")
+        for strategy in strategies:
+            time = strategy.time
+            Backtest(100, time[0], time[len(time)-1], strategy, args.verbose)
+
+    def get_args(self):
+        parser = argparse.ArgumentParser(description='This is PYTRADE')
+        parser.add_argument("--symbol", default="ETHBTC", type=str, help="This is the symbol you wish to trade")
+        parser.add_argument("--interval", default="1m", type=str, help="The interval for the trades. Defaults to 1m")
+        parser.add_argument('--graph', action='store_true', help="Whether to graph the result")
+        parser.add_argument('--verbose', action='store_true', help="Verbose output from backtests")
+        parser.add_argument('--startTime', default="1 week ago", help="How long ago to backtest from e.g 1 week ago")
+        return parser.parse_args()
 
     def open_ticker_socket(self, symbol:str):
         self.bm = BinanceSocketManager(self.client)
