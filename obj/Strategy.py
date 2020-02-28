@@ -3,12 +3,10 @@ import talib as ta
 import matplotlib.pyplot as plt
 import numpy as np
 from datetime import datetime
-import os
-import argparse
 
 class Strategy:
 
-    def __init__(self, indicator_name, strategy_name, pair, interval, klines):
+    def __init__(self, indicator_name:str, strategy_name:str, pair:str, interval:str, klines):
         self.indicator = indicator_name
         self.strategy = strategy_name
         self.pair = pair

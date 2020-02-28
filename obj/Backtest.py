@@ -16,7 +16,6 @@ class Backtest:
         self.startTime = start_datetime
         self.endTime = end_datetime
         self.strategy = strategy
-        self.interval = self.strategy.interval
         self.trades = []
         self.runBacktest()
         self.printResults()
@@ -60,7 +59,7 @@ class Backtest:
         print(f"\nTrading Pair: {self.strategy.pair}")
         print(f"Indicator: {self.strategy.indicator}")
         print(f"Strategy: {self.strategy.strategy}")
-        print(f"Interval: {self.interval}")
+        print(f"Interval: {self.strategy.interval}")
         print(f"Ending amount: {str(self.amount)}")
         print(f"Number of Trades: {str(self.num_trades)}")
         if self.num_trades > 0:
