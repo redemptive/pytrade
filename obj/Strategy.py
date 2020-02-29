@@ -60,13 +60,13 @@ class Strategy:
                 return None
         elif self.indicator == 'RSI':
             if self.strategy == '7030':
-                return self.calculateRsi(70, 30)
+                return self.calculate_rsi(70, 30)
             elif self.strategy == '8020':
-                return self.calculateRsi(80, 20)
+                return self.calculate_rsi(80, 20)
         else:
             return None
 
-    def calculateRsi(self, high, low):
+    def calculate_rsi(self, high, low):
         open_time = [int(entry[0]) for entry in self.klines]
         new_time = [datetime.fromtimestamp(time / 1000) for time in open_time]
         self.time = new_time
@@ -89,7 +89,7 @@ class Strategy:
 
         return result
 
-    def plotIndicator(self):
+    def plot_indicator(self):
         open_time = [int(entry[0]) for entry in self.klines]
         new_time = [datetime.fromtimestamp(time / 1000) for time in open_time]
         plt.style.use('dark_background')

@@ -16,21 +16,28 @@ from obj.Backtest import Backtest
 class Pytrade():
     def __init__(self):
 
-        args = self.get_args()
+        self.args:object = self.get_args()
 
-        self.symbol:str = args.symbol
-        self.kline_interval:str = args.interval
-        self.api_key:str = os.environ["BINANCE_API_KEY"]
-        self.api_secret:str = os.environ["BINANCE_API_SECRET"]
+        self.symbol:str = self.args.symbol
+        self.kline_interval:str = self.args.interval
+        self.api_key:str = os.environ["BINANCE_API_KEY"] or ""
+        self.api_secret:str = os.environ["BINANCE_API_SECRET"] or ""
+
+        self.klines = []
 
         #Binance connection setup
-        self.client = Client(self.api_key, self.api_secret)
+        if (self.api_key != "") and (self.api_secret != ""):
+            print("Api keys loaded from env")
+            self.client = Client(self.api_key, self.api_secret)
+        else:
+            print("No api keys in env. Live trading will run in test mode")
+            self.client = Client()
 
-        if args.backtest:
-            print(f"Getting data for {args.symbol} starting {args.startTime}...\n")
-            klines = self.client.get_historical_klines(symbol=self.symbol,interval=self.kline_interval, start_str=args.startTime)
+        if self.args.backtest:
+            print(f"Getting data for {self.args.symbol} starting {self.args.startTime}...\n")
+            klines = self.client.get_historical_klines(symbol=self.symbol,interval=self.kline_interval, start_str=self.args.startTime)
 
-            if args.debug:
+            if self.args.debug:
                 print(klines)
 
             print("Loading strategies...\n")
@@ -40,15 +47,15 @@ class Pytrade():
                 Strategy("RSI", "8020", self.symbol, self.kline_interval, klines)
             ]
 
-            if args.graph:
+            if self.args.graph:
                 print("Rendering graphs\n")
                 for strategy in strategies:
-                    strategy.plotIndicator()
+                    strategy.plot_indicator()
 
             print("Backtesting strategies...")
             for strategy in strategies:
-                Backtest(100, strategy.time[0], strategy.time[len(strategy.time)-1], strategy, args.verbose)
-        elif args.live:
+                Backtest(100, strategy.time[0], strategy.time[len(strategy.time)-1], strategy, self.args.verbose)
+        elif self.args.live:
             self.open_kline_socket(self.symbol)
         else:
             print("Please select --backtest (-b) or --live (-l) mode")
@@ -77,10 +84,21 @@ class Pytrade():
         self.bm.start()
 
     def process_message(self, msg):
-        print("message type: {}".format(msg["e"]))
-        print(msg)
+        print(f"Recieved message type: {msg['e']}")
+        if self.args.debug:
+            print(msg)
 
-    def getBalances(self):
+        if (msg['e'] == "kline"):
+            self.process_kline(msg['k'])
+
+    def process_kline(self, kline):
+        if kline['x'] == True:
+            self.klines.append(kline)
+            print(f"Obtained closed kline. Count {len(self.klines)}")
+            if (self.args.debug):
+                print(self.klines)
+
+    def get_balances(self):
         prices = self.client.get_withdraw_history()
         return prices
 

@@ -17,11 +17,11 @@ class Backtest:
         self.endTime = end_datetime
         self.strategy = strategy
         self.trades = []
-        self.runBacktest()
-        self.printResults()
+        self.run_backtest()
+        self.print_results()
 
 
-    def runBacktest(self):
+    def run_backtest(self):
         amount = self.start
         klines = self.strategy.klines
         time = self.strategy.time
@@ -55,7 +55,7 @@ class Backtest:
                     point_finder += 1
         self.amount = amount
 
-    def printResults(self):
+    def print_results(self):
         print(f"\nTrading Pair: {self.strategy.pair}")
         print(f"Indicator: {self.strategy.indicator}")
         print(f"Strategy: {self.strategy.strategy}")
