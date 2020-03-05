@@ -23,10 +23,10 @@ class Backtest:
 
     def run_backtest(self):
         amount = self.start
-        klines = self.strategy.klines
-        time = self.strategy.time
+        time = self.strategy.time[self.strategy.tradeCoins[-1]]
         point_finder = 0
         strategy_result = self.strategy.strategy_result
+        print(strategy_result)
         #Finds the first cross point within the desired backtest interval
         while strategy_result[point_finder][0] < self.startTime:
             point_finder += 1
@@ -34,7 +34,7 @@ class Backtest:
         active_buy = False
         buy_price = 0
         #Runs through each kline
-        for i in range(len(klines)):
+        for i in range(len(self.strategy.klines[self.strategy.tradeCoins[-1]])):
             if point_finder > len(strategy_result)-1:
                 break
             #If timestamp is in the interval, check if strategy has triggered a buy or sell
@@ -56,7 +56,8 @@ class Backtest:
         self.amount = amount
 
     def print_results(self):
-        print(f"\nTrading Pair: {self.strategy.pair}")
+        print(self.trades)
+        print(f"\nTrade coins: {self.strategy.tradeCoins}")
         print(f"Indicator: {self.strategy.indicator}")
         print(f"Strategy: {self.strategy.strategy}")
         print(f"Interval: {self.strategy.interval}")
@@ -68,6 +69,6 @@ class Backtest:
         if self.verbose:
             for i in range(len(self.trades)):
                 if i > 0 and self.trades[i][0] == "SELL":
-                    print(f"{self.trades[i][0]} at {str(self.trades[i][1])} | {int(((self.trades[i][1] / self.trades[i - 1][1]) * 100) - 100)}%")
+                    print(f"{self.trades[i][0]} {self.trades[i][4]} at {str(self.trades[i][1])} | {int(((self.trades[i][1] / self.trades[i - 1][1]) * 100) - 100)}%")
                 else:
-                    print(f"{self.trades[i][0]} at {str(self.trades[i][1])}")
+                    print(f"{self.trades[i][0]} {self.trades[i][4]} at {str(self.trades[i][1])}")
