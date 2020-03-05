@@ -9,10 +9,13 @@ import math
 from obj.Strategy import Strategy
 
 class LiveTrading:
-    def __init__(self, client, trade_coins:list, base_coin, indicator, strategy, kline_interval, stop_loss, verbose, debug):
-        self.client = client
-        self.trade_coins = trade_coins
-        self.base_coin = base_coin
+    def __init__(self, client:object, trade_coins:list, base_coin:str, 
+                indicator:str, strategy:str, kline_interval:str, 
+                stop_loss:int, verbose:bool, debug:bool):
+
+        self.client:object = client
+        self.trade_coins:list = trade_coins
+        self.base_coin:str = base_coin
         self.strategy_name = strategy
         self.indicator = indicator
         self.verbose = verbose
@@ -71,26 +74,30 @@ class LiveTrading:
     def process_kline(self, kline):
         if kline['x'] == True:
             self.message_no += 1
-            self.klines[kline['s'][:len(kline['s']) - len(self.base_coin)]].append(self.kline_to_ohlcv(kline))
+            self.klines[kline['s'][:len(kline['s']) - len(self.base_coin)]].append(self.kline_to_ohlcv(kline, self.verbose, self.debug))
 
             if (self.verbose): self.print_with_timestamp(f"Obtained closed kline and converted to ohlcv. Count for {kline['s']}: {len(self.klines[kline['s'][:len(kline['s']) - len(self.base_coin)]])}")
             if (self.debug): print(self.klines)
 
             if self.message_no == len(self.trade_coins):
+                self.message_no = 0
                 self.print_with_timestamp("Checking for any actions...")
                 self.strategy = Strategy(self.indicator, self.strategy_name, self.trade_coins, self.base_coin, self.kline_interval, self.klines, self.stop_loss)
                 if (len(self.strategy.strategy_result) > 0):
+                    
+                    self.message_no = 0
 
                     if self.debug: print(self.strategy.strategy_result)
                     if self.verbose: print(self.klines[-1])
-                    # See if the timestamps match on the latest kine and srtategy action
-                    # If so, we have a trade to do 
-                    if (self.strategy.strategy_result[-1][0] == datetime.fromtimestamp(self.klines[-1][0] / 1000)):
-                        if (self.strategy.strategy_result[-1][3] == "BUY"):
-                            self.place_buy(self.strategy.strategy_result[-1][4], self.strategy.strategy_result[-1][5])
+                    
+                    # See if the timestamps match on the latest kine and strategy action
+                    # If so, we have a trade to do
+                    latest_result = self.strategy.strategy_result[-1]
+                    if (latest_result[0] == datetime.fromtimestamp(self.klines[-1][0] / 1000)):
+                        if (latest_result[3] == "BUY"):
+                            self.place_buy(latest_result[4], latest_result[5])
                         else:
-                            self.place_sell(self.strategy.strategy_result[-1][4], self.strategy.strategy_result[-1][5])
-                self.message_no = 0
+                            self.place_sell(latest_result[4], latest_result[5])
 
     def place_buy(self, coin, price):
         balance = self.client.get_asset_balance(asset=self.base_coin)
@@ -124,7 +131,8 @@ class LiveTrading:
         multiplier = 10 ** decimals
         return math.floor(n * multiplier) / multiplier
 
-    def kline_to_ohlcv(self, kline):
+    @staticmethod
+    def kline_to_ohlcv(kline, verbose, debug):
 
         # This converts the kline from the socket stream to the ohclv data
         # so it is the same as the backtesting historical data returned from API
@@ -155,7 +163,7 @@ class LiveTrading:
             kline['B']
         ]
 
-        if self.verbose: print("\nUnpacked closed kline to ohlcv")
-        if self.debug: print(ohlcv)
+        if verbose: print("\nUnpacked closed kline to ohlcv")
+        if debug: print(ohlcv)
 
         return ohlcv

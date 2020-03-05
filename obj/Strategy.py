@@ -24,6 +24,14 @@ class Strategy:
         
         self.strategy_result = self.calculate_strategy()
 
+    def set_time(self):
+        open_time = {}
+        self.time = {}
+
+        for coin in self.tradeCoins:
+            open_time[coin] = [int(entry[0]) for entry in self.klines[coin]]
+            self.time[coin] = [datetime.fromtimestamp(time / 1000) for time in open_time[coin]]
+
     def calculate_indicator(self, coin):
         if self.indicator == 'MACD':
             close_array = np.asarray([float(entry[4]) for entry in self.klines[coin]])
@@ -42,12 +50,7 @@ class Strategy:
         if self.indicator == 'MACD':
 
             if self.strategy == 'CROSS':
-                open_time = {}
-                self.time = {}
-
-                for coin in self.tradeCoins:
-                    open_time[coin] = [int(entry[0]) for entry in self.klines[coin]]
-                    self.time[coin] = [datetime.fromtimestamp(time / 1000) for time in open_time[coin]]
+                self.set_time()
                 
                 crosses = []
                 macdabove = False
@@ -85,11 +88,7 @@ class Strategy:
 
     def calculate_rsi(self, high, low):
 
-        open_time = {}
-
-        for coin in self.tradeCoins:
-            open_time[coin] = [int(entry[0]) for entry in self.klines[coin]]
-            self.time[coin] = [datetime.fromtimestamp(time / 1000) for time in open_time[coin]]
+        self.set_time()
 
         result = []
         active_buy = False
