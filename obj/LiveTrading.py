@@ -16,15 +16,15 @@ class LiveTrading:
         self.client:object = client
         self.trade_coins:list = trade_coins
         self.base_coin:str = base_coin
-        self.strategy_name = strategy
-        self.indicator = indicator
-        self.verbose = verbose
-        self.debug = debug
-        self.kline_interval = kline_interval
-        self.stop_loss = stop_loss
+        self.strategy_name:str = strategy
+        self.indicator:str = indicator
+        self.verbose:bool = verbose
+        self.debug:bool = debug
+        self.kline_interval:str = kline_interval
+        self.stop_loss:int = stop_loss
 
-        self.precision = {}
-        self.klines = {}
+        self.precision:dict = {}
+        self.klines:dict = {}
 
         self.message_no = 0
 
@@ -34,8 +34,9 @@ class LiveTrading:
             self.klines[coin] = []
 
         self.active_order = False
+        self.open_trade = False
 
-        self.balance = self.client.get_asset_balance(asset=self.base_coin)['free']
+        self.balance = self.get_balance(self.base_coin)
         self.starting_balance = self.balance
 
         print(f"\nStarting trading with the following:")
@@ -45,6 +46,9 @@ class LiveTrading:
         print(f"Strategy: {self.strategy_name}")
 
         self.open_kline_sockets(self.trade_coins)
+
+    def get_balance(self, coin):
+        return float(self.client.get_asset_balance(asset=coin)["free"])
 
     def open_kline_sockets(self, coins:list):
         print(f"\nOpening kline socket for {coins}")
@@ -60,12 +64,10 @@ class LiveTrading:
     
     @staticmethod
     def print_with_timestamp(message):
-        t = time.localtime()
-        current_time = time.strftime("%H:%M:%S", t)
-        print(f"\n{current_time} | {message}")
+        print(f"\n{time.strftime('%H:%M:%S', time.localtime())} | {message}")
 
     def process_message(self, msg):
-        msg = msg['data']
+        msg = msg["data"]
         if self.verbose: self.print_with_timestamp(f"Recieved kline for {msg['s']}")
         if self.debug: print(msg)
 
@@ -84,8 +86,6 @@ class LiveTrading:
                 self.print_with_timestamp("Checking for any actions...")
                 self.strategy = Strategy(self.indicator, self.strategy_name, self.trade_coins, self.base_coin, self.kline_interval, self.klines, self.stop_loss)
                 if (len(self.strategy.strategy_result) > 0):
-                    
-                    self.message_no = 0
 
                     if self.debug: print(self.strategy.strategy_result)
                     if self.verbose: print(self.klines[-1])
@@ -93,30 +93,32 @@ class LiveTrading:
                     # See if the timestamps match on the latest kine and strategy action
                     # If so, we have a trade to do
                     latest_result = self.strategy.strategy_result[-1]
-                    if (latest_result[0] == datetime.fromtimestamp(self.klines[-1][0] / 1000)):
-                        if (latest_result[3] == "BUY"):
-                            self.place_buy(latest_result[4], latest_result[5])
-                        else:
-                            self.place_sell(latest_result[4], latest_result[5])
+                    if ((not self.active_order) and (latest_result[3] == "BUY")):
+                        self.active_order = True
+                        self.place_buy(latest_result[5], latest_result[4])
+
+                    elif ((self.active_order) and (latest_result[3] == "SELL")):
+                        self.active_order = False
+                        self.place_sell(latest_result[5], latest_result[4])
 
     def place_buy(self, coin, price):
-        balance = self.client.get_asset_balance(asset=self.base_coin)
-        quantity = self.round_down(float(balance['free']) / float(price), self.precision[coin])
+        self.balance = self.get_balance(self.base_coin)
+        quantity = self.round_down(self.balance / float(price), self.precision[coin])
         print(f"Buying {quantity} {coin} at {price}")
         self.active_order = self.client.order_market_buy(
             symbol=f"{coin}{self.base_coin}",
             quantity=quantity
         )
-        self.balance = balance
 
     def place_sell(self, coin, price):
         balance = self.client.get_asset_balance(asset=coin)
-        quantity = self.round_down(float(balance['free']), self.precision[coin])
+        quantity = self.round_down(balance, self.precision[coin])
         print(f"\nSelling {quantity} {coin} at {price}")
         self.active_order = self.client.order_market_sell(
             symbol=f"{coin}{self.base_coin}",
             quantity=quantity
         )
+        self.balance = self.client.get_balance(self.base_coin)
         print(f"Result: {self.balance - (quantity * price)}")
         print(f"Percentage: {((self.balance - (quantity * price)) / self.balance) * 100}%")
         print(f"Running percentage: {(self.starting_balance / self.balance) * 100}%")
@@ -128,8 +130,7 @@ class LiveTrading:
 
     @staticmethod
     def round_down(n, decimals=0):
-        multiplier = 10 ** decimals
-        return math.floor(n * multiplier) / multiplier
+        return math.floor(n * (10 ** decimals)) / 10 ** decimals
 
     @staticmethod
     def kline_to_ohlcv(kline, verbose, debug):

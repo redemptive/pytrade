@@ -115,26 +115,3 @@ class Strategy:
                                 active_buy = False  
 
         return result
-
-    def plot_indicator(self):
-        open_time = [int(entry[0]) for entry in self.klines]
-        new_time = [datetime.fromtimestamp(time / 1000) for time in open_time]
-        plt.style.use('dark_background')
-        for entry in self.strategy_result:
-            plt.plot(entry[0], entry[1], entry[2])
-        if self.indicator == 'MACD':
-            plt.plot(new_time, self.indicator_result[0], label='MACD')
-            plt.plot(new_time, self.indicator_result[1], label='MACD Signal')
-            plt.plot(new_time, self.indicator_result[2], label='MACD Histogram')
-
-        elif self.indicator == 'RSI':
-            plt.plot(new_time, self.indicator_result, label='RSI')
-
-        else:
-            pass
-
-        plt.title(f"{self.indicator} Plot for {self.pair} on {self.interval}")
-        plt.xlabel("Open Time")
-        plt.ylabel("Value")
-        plt.legend()
-        plt.show()

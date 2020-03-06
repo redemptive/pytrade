@@ -3,12 +3,10 @@ import talib as ta
 import matplotlib.pyplot as plt
 import numpy as np
 from datetime import datetime
-import os
-import argparse
 
 class Backtest:
     def __init__(self, starting_amount, start_datetime, end_datetime, strategy, verbose):
-        self.verbose = verbose
+        self.verbose:bool = verbose
         self.start = starting_amount
         self.num_trades = 0
         self.profitable_trades = 0
@@ -26,7 +24,6 @@ class Backtest:
         time = self.strategy.time[self.strategy.tradeCoins[-1]]
         point_finder = 0
         strategy_result = self.strategy.strategy_result
-        print(strategy_result)
         #Finds the first cross point within the desired backtest interval
         while strategy_result[point_finder][0] < self.startTime:
             point_finder += 1
@@ -43,7 +40,7 @@ class Backtest:
                     if strategy_result[point_finder][3] == 'BUY':
                         active_buy = True
                         buy_price = float(strategy_result[point_finder][4])
-                        self.trades.append(['BUY', buy_price])
+                        self.trades.append(['BUY', buy_price, strategy_result[point_finder][5]])
                     if strategy_result[point_finder][3] == 'SELL' and active_buy == True:
                         active_buy = False
                         bought_amount = amount / buy_price
@@ -51,12 +48,11 @@ class Backtest:
                         if(float(strategy_result[point_finder][4]) > buy_price):
                             self.profitable_trades += 1
                         amount = bought_amount * float(strategy_result[point_finder][4])
-                        self.trades.append(['SELL', float(strategy_result[point_finder][4])])
+                        self.trades.append(['SELL', float(strategy_result[point_finder][4]), strategy_result[point_finder][5]])
                     point_finder += 1
         self.amount = amount
 
     def print_results(self):
-        print(self.trades)
         print(f"\nTrade coins: {self.strategy.tradeCoins}")
         print(f"Indicator: {self.strategy.indicator}")
         print(f"Strategy: {self.strategy.strategy}")
@@ -69,6 +65,6 @@ class Backtest:
         if self.verbose:
             for i in range(len(self.trades)):
                 if i > 0 and self.trades[i][0] == "SELL":
-                    print(f"{self.trades[i][0]} {self.trades[i][4]} at {str(self.trades[i][1])} | {int(((self.trades[i][1] / self.trades[i - 1][1]) * 100) - 100)}%")
+                    print(f"{self.trades[i][0]} {self.trades[i][2]} at {str(self.trades[i][1])} | {int(((self.trades[i][1] / self.trades[i - 1][1]) * 100) - 100)}%")
                 else:
-                    print(f"{self.trades[i][0]} {self.trades[i][4]} at {str(self.trades[i][1])}")
+                    print(f"{self.trades[i][0]} {self.trades[i][2]} at {str(self.trades[i][1])}")

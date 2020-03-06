@@ -1,4 +1,5 @@
 import unittest
+import time
 
 from pytrade import Pytrade
 from obj.LiveTrading import LiveTrading
@@ -14,7 +15,6 @@ class TestLiveTrading(unittest.TestCase):
     def test_round_down(self):
         self.assertEqual(LiveTrading.round_down(3.8, 0), 3)
         self.assertEqual(LiveTrading.round_down(2.97, 1), 2.9)
-
 
 
 if __name__ == '__main__':
