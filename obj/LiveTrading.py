@@ -26,18 +26,18 @@ class LiveTrading:
         self.precision:dict = {}
         self.klines:dict = {}
 
-        self.message_no = 0
+        self.message_no:int = 0
 
         for coin in trade_coins:
             if self.verbose: print(f"Getting precision for {coin}")
             self.precision[coin] = self.get_precision(coin)
             self.klines[coin] = []
 
-        self.active_order = False
-        self.open_trade = False
+        self.active_order:bool = False
+        self.open_trade:bool = False
 
-        self.balance = self.get_balance(self.base_coin)
-        self.starting_balance = self.balance
+        self.balance:float = self.get_balance(self.base_coin)
+        self.starting_balance:float = self.balance
 
         print(f"\nStarting trading with the following:")
         print(f"Trade coins: {self.trade_coins}")
@@ -72,6 +72,10 @@ class LiveTrading:
         if self.debug: print(msg)
 
         if (msg['e'] == "kline"): self.process_kline(msg['k'])
+        elif msg['e'] == 'error':
+            print("Socket error... restarting socket")
+            self.bm.close()
+            self.open_kline_sockets(self.trade_coins)
 
     def process_kline(self, kline):
         if kline['x'] == True:
@@ -103,7 +107,7 @@ class LiveTrading:
 
     def place_buy(self, coin, price):
         self.balance = self.get_balance(self.base_coin)
-        quantity = self.round_down(self.balance / float(price), self.precision[coin])
+        quantity = self.round_down((self.balance * 0.99) / float(price), self.precision[coin])
         print(f"Buying {quantity} {coin} at {price}")
         self.active_order = self.client.order_market_buy(
             symbol=f"{coin}{self.base_coin}",
@@ -111,17 +115,20 @@ class LiveTrading:
         )
 
     def place_sell(self, coin, price):
-        balance = self.client.get_asset_balance(asset=coin)
+        balance = self.get_balance(coin)
         quantity = self.round_down(balance, self.precision[coin])
-        print(f"\nSelling {quantity} {coin} at {price}")
-        self.active_order = self.client.order_market_sell(
-            symbol=f"{coin}{self.base_coin}",
-            quantity=quantity
-        )
-        self.balance = self.client.get_balance(self.base_coin)
-        print(f"Result: {self.balance - (quantity * price)}")
-        print(f"Percentage: {((self.balance - (quantity * price)) / self.balance) * 100}%")
-        print(f"Running percentage: {(self.starting_balance / self.balance) * 100}%")
+        if (quantity != 0):
+            print(f"\nSelling {quantity} {coin} at {price}")
+            self.active_order = self.client.order_market_sell(
+                symbol=f"{coin}{self.base_coin}",
+                quantity=quantity
+            )
+            self.balance = self.get_balance(self.base_coin)
+            print(f"Result: {self.balance - (quantity * price)}")
+            print(f"Percentage: {((self.balance - (quantity * price)) / self.balance) * 100}%")
+            print(f"Running percentage: {(self.starting_balance / self.balance) * 100}%")
+        else:
+            print(f"Something went wrong. Bot is trying to sell 0 {coin}")
 
     def get_precision(self, coin):
         for filt in self.client.get_symbol_info(f"{coin}{self.base_coin}")['filters']:

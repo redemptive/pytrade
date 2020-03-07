@@ -4,6 +4,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 from datetime import datetime
 
+from obj.Trade import Trade
+
 class Strategy:
 
     def __init__(self, indicator_name:str, strategy_name:str, tradeCoins:list, baseCoin:str, interval:str, klines:dict, stop_loss:int):

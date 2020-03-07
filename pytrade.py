@@ -25,8 +25,7 @@ class Pytrade():
 
         self.tradeCoins = self.args.tradeCoins.split(",")
 
-        # Get credentials from env if they are there
-        # And set up the binance client with or without creds
+        # Get credentials from env if they are there and quit if they aren't
         if ("BINANCE_API_KEY" in os.environ):
             self.api_key:str = os.environ["BINANCE_API_KEY"]
             self.api_secret:str = os.environ["BINANCE_API_SECRET"]
@@ -34,8 +33,8 @@ class Pytrade():
             print("\nApi keys loaded from env")
             self.client = Client(self.api_key, self.api_secret)   
         else:
-            print("No api keys in env. Live trading will run in test mode")
-            self.client = Client()
+            print("No api keys in env. Please enter api creds in BINANCE_API_KEY and BINANCE_API_SECRET env variables")
+            quit()
 
         self.klines = []
 
@@ -55,7 +54,6 @@ class Pytrade():
         parser.add_argument("-T", "--tradeCoins", default="ETH", type=str, help="This is a comma separated list of the coins you wish to trade. Defaults to ETH")
         parser.add_argument("-B", "--baseCoin", default="BTC", type=str, help="This is the base coin you will use to pay. Defaults to BTC")
         parser.add_argument("-i", "--interval", default="1m", type=str, help="The interval for the trades. Defaults to '1m'")
-        parser.add_argument("-g", "--graph", action="store_true", help="Whether to graph the result")
         parser.add_argument("-t", "--time", default="1 week ago", help="How long ago to backtest from. Defaults to '1 week ago'")
         parser.add_argument("-I", "--indicator", default="RSI", type=str, help="What indicator to use. Defaults to RSI")
         parser.add_argument("-S", "--strategy", default="8020", type=str, help="What strategy to use. Defaults to 8020")
@@ -85,10 +83,6 @@ class Pytrade():
 
         print("Loading strategy...\n")
         strategy = Strategy(self.args.indicator, self.args.strategy, self.tradeCoins, self.args.baseCoin, self.kline_interval, klines, self.args.stopLoss)
-
-        if self.args.graph:
-            print("Rendering graphs\n")
-            strategy.plot_indicator()
 
         print("Backtesting strategy...")
         Backtest(100, strategy.time[self.tradeCoins[-1]][0], strategy.time[self.tradeCoins[-1]][-1], strategy, self.args.verbose)

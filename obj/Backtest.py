@@ -4,13 +4,15 @@ import matplotlib.pyplot as plt
 import numpy as np
 from datetime import datetime
 
+from obj.Trade import Trade
+
 class Backtest:
     def __init__(self, starting_amount, start_datetime, end_datetime, strategy, verbose):
         self.verbose:bool = verbose
-        self.start = starting_amount
-        self.num_trades = 0
-        self.profitable_trades = 0
-        self.amount = self.start
+        self.start:int = starting_amount
+        self.num_trades:int = 0
+        self.profitable_trades:int = 0
+        self.amount:int = self.start
         self.startTime = start_datetime
         self.endTime = end_datetime
         self.strategy = strategy
@@ -20,7 +22,6 @@ class Backtest:
 
 
     def run_backtest(self):
-        amount = self.start
         time = self.strategy.time[self.strategy.tradeCoins[-1]]
         point_finder = 0
         strategy_result = self.strategy.strategy_result
@@ -45,7 +46,7 @@ class Backtest:
                         active_buy = False
                         bought_amount = amount / buy_price
                         self.num_trades += 1
-                        if(float(strategy_result[point_finder][4]) > buy_price):
+                        if(float(strategy_result[point_finder][4]) > buy_price):    
                             self.profitable_trades += 1
                         amount = bought_amount * float(strategy_result[point_finder][4])
                         self.trades.append(['SELL', float(strategy_result[point_finder][4]), strategy_result[point_finder][5]])
