@@ -1,6 +1,7 @@
 # Binance imports
 from binance.client import Client
 from binance.websockets import BinanceSocketManager
+from binance.enums import *
 
 import time
 from datetime import datetime
@@ -22,6 +23,7 @@ class LiveTrading:
         self.debug:bool = debug
         self.kline_interval:str = kline_interval
         self.stop_loss:int = stop_loss
+        self.trades = []
 
         self.precision:dict = {}
         self.klines:dict = {}
@@ -89,44 +91,46 @@ class LiveTrading:
                 self.message_no = 0
                 self.print_with_timestamp("Checking for any actions...")
                 self.strategy = Strategy(self.indicator, self.strategy_name, self.trade_coins, self.base_coin, self.kline_interval, self.klines, self.stop_loss)
-                if (len(self.strategy.strategy_result) > 0):
 
-                    if self.debug: print(self.strategy.strategy_result)
-                    if self.verbose: print(self.klines[-1])
-                    
-                    # See if the timestamps match on the latest kine and strategy action
-                    # If so, we have a trade to do
-                    latest_result = self.strategy.strategy_result[-1]
-                    if ((not self.active_order) and (latest_result[3] == "BUY")):
-                        self.active_order = True
-                        self.place_buy(latest_result[5], latest_result[4])
+                if len(self.strategy.trades) > len(self.trades):
+                    print(f"New trades: {self.strategy.trades[len(self.trades):]}")
+                    self.trades += self.strategy.trades[len(self.trades):]
 
-                    elif ((self.active_order) and (latest_result[3] == "SELL")):
-                        self.active_order = False
-                        self.place_sell(latest_result[5], latest_result[4])
+                    for trade in self.trades:
+                        if not trade.completed:
+                            if trade.action == "BUY": self.place_buy(trade.trade_coin, trade.price)
+                            elif trade.action == "SELL": self.place_sell(trade.trade_coin, trade.price)
+                            trade.completed = True
+
 
     def place_buy(self, coin, price):
         self.balance = self.get_balance(self.base_coin)
         quantity = self.round_down((self.balance * 0.99) / float(price), self.precision[coin])
         print(f"Buying {quantity} {coin} at {price}")
-        self.active_order = self.client.order_market_buy(
+        order = self.client.create_order(
             symbol=f"{coin}{self.base_coin}",
-            quantity=quantity
+            side=SIDE_BUY,
+            type=ORDER_TYPE_LIMIT,
+            timeInForce=TIME_IN_FORCE_GTC,
+            quantity=quantity,
+            price=price
         )
+        print(order)
 
     def place_sell(self, coin, price):
         balance = self.get_balance(coin)
         quantity = self.round_down(balance, self.precision[coin])
         if (quantity != 0):
             print(f"\nSelling {quantity} {coin} at {price}")
-            self.active_order = self.client.order_market_sell(
+            order = self.client.create_order(
                 symbol=f"{coin}{self.base_coin}",
-                quantity=quantity
+                side=SIDE_SELL,
+                type=ORDER_TYPE_LIMIT,
+                timeInForce=TIME_IN_FORCE_GTC,
+                quantity=quantity,
+                price=price
             )
-            self.balance = self.get_balance(self.base_coin)
-            print(f"Result: {self.balance - (quantity * price)}")
-            print(f"Percentage: {((self.balance - (quantity * price)) / self.balance) * 100}%")
-            print(f"Running percentage: {(self.starting_balance / self.balance) * 100}%")
+            print(order)
         else:
             print(f"Something went wrong. Bot is trying to sell 0 {coin}")
 
@@ -144,6 +148,7 @@ class LiveTrading:
 
         # This converts the kline from the socket stream to the ohclv data
         # so it is the same as the backtesting historical data returned from API
+        # which is what a Strategy accepts
         ohlcv = [
             # Open time
             kline['t'],

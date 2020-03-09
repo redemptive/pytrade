@@ -73,15 +73,13 @@ class Pytrade():
 
         for coin in self.tradeCoins:
             symbol = f"{coin}{self.args.baseCoin}"
-            fees = self.client.get_trade_fee(symbol=symbol)
-            print(f"\nFee for {symbol} is {fees['tradeFee'][0]['maker']}")
-            print(f"Getting data for {symbol} starting {self.args.time}...\n")
+            print(f"Getting data for {symbol} starting {self.args.time}...")
             klines[coin] = self.client.get_historical_klines(symbol=symbol,interval=self.kline_interval, start_str=self.args.time)
 
             if self.args.debug:
                 print(klines)
 
-        print("Loading strategy...\n")
+        print("\nLoading strategy...\n")
         strategy = Strategy(self.args.indicator, self.args.strategy, self.tradeCoins, self.args.baseCoin, self.kline_interval, klines, self.args.stopLoss)
 
         print("Backtesting strategy...")
