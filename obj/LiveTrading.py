@@ -82,26 +82,33 @@ class LiveTrading:
     def process_kline(self, kline):
         if kline['x'] == True:
             self.message_no += 1
-            self.klines[kline['s'][:len(kline['s']) - len(self.base_coin)]].append(self.kline_to_ohlcv(kline, self.verbose, self.debug))
+            trade_coin = f"{kline['s'][:len(kline['s']) - len(self.base_coin)]}"
+            self.klines[trade_coin].append(self.kline_to_ohlcv(kline, self.verbose, self.debug))
 
-            if (self.verbose): self.print_with_timestamp(f"Obtained closed kline and converted to ohlcv. Count for {kline['s']}: {len(self.klines[kline['s'][:len(kline['s']) - len(self.base_coin)]])}")
+            if (self.verbose): 
+                self.print_with_timestamp(f"Obtained closed kline and converted to ohlcv. Count for {kline['s']}: {len(self.klines[trade_coin])}")
+            
             if (self.debug): print(self.klines)
 
             if self.message_no == len(self.trade_coins):
                 self.message_no = 0
                 self.print_with_timestamp("Checking for any actions...")
                 self.strategy = Strategy(self.indicator, self.strategy_name, self.trade_coins, self.base_coin, self.kline_interval, self.klines, self.stop_loss)
-
+                
+                # If the strategy is returning more trades than we have, there must be new ones
                 if len(self.strategy.trades) > len(self.trades):
-                    print(f"New trades: {self.strategy.trades[len(self.trades):]}")
-                    self.trades += self.strategy.trades[len(self.trades):]
+                    new_trades = self.strategy.trades[len(self.trades):]
+                    print(f"New trades: {new_trades}")
+                    self.process_trades(new_trades)
+                    self.trades += new_trades
 
-                    for trade in self.trades:
-                        if not trade.completed:
-                            if trade.action == "BUY": self.place_buy(trade.trade_coin, trade.price)
-                            elif trade.action == "SELL": self.place_sell(trade.trade_coin, trade.price)
-                            trade.completed = True
-
+    def process_trades(self, trades):
+        for trade in trades:
+            if not trade.completed:
+                if trade.action == "BUY": self.place_buy(trade.trade_coin, trade.price)
+                elif trade.action == "SELL": self.place_sell(trade.trade_coin, trade.price)
+                trade.completed = True
+        
 
     def place_buy(self, coin, price):
         self.balance = self.get_balance(self.base_coin)

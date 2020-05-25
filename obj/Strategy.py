@@ -19,6 +19,8 @@ class Strategy:
         self.time = {}
         self.trades = []
 
+        self.highest_price:int = 0
+
         self.indicator_result = {}
         self.strategy_result = {}
 
@@ -34,6 +36,7 @@ class Strategy:
         for coin in self.tradeCoins:
             open_time[coin] = [int(entry[0]) for entry in self.klines[coin]]
             self.time[coin] = [datetime.fromtimestamp(time / 1000) for time in open_time[coin]]
+            print(self.time[coin])
 
     def calculate_indicator(self, coin):
         if self.indicator == 'MACD':
@@ -73,6 +76,8 @@ class Strategy:
                                             action="BUY",
                                             price=self.klines[coin][i][4]
                                         ))
+                                elif self.check_stop_loss(self.klines[coin][i], coin):
+                                    macdabove = False
 
                             elif (len(self.trades) > 0) and (self.trades[-1].trade_coin == coin):
                                 if macdabove == True:
@@ -84,8 +89,6 @@ class Strategy:
                                         action="SELL",
                                         price=self.klines[coin][i][4]
                                     ))
-                                else:
-                                    macdabove = self.check_stop_loss(self.klines[coin][i], coin)
             else: return None
         elif self.indicator == 'RSI':
             if self.strategy == '7030': return self.calculate_rsi(70, 30)
@@ -100,8 +103,7 @@ class Strategy:
         # Runs through each timestamp in order
         for i in range(len(self.indicator_result[self.tradeCoins[-1]])):
             for coin in self.tradeCoins:
-                if np.isnan(self.indicator_result[coin][i]):
-                    pass
+                if np.isnan(self.indicator_result[coin][i]): pass
                 # If the RSI is well defined, check if over high value or under low
                 else:
                     if float(self.indicator_result[coin][i]) < low and active_buy == False:
@@ -131,9 +133,11 @@ class Strategy:
 
     def check_stop_loss(self, current_kline, coin):
         if (len(self.trades) > 0) and (self.trades[-1].action == "BUY") and (self.trades[-1].trade_coin == coin):
-            if ((float(current_kline[4]) / float(self.trades[-1].price)) * 100) < (100 - self.stop_loss):
+            if float(self.highest_price) < float(current_kline[4]):
+                self.highest_price = current_kline[4]
+            if ((float(current_kline[4]) / float(self.highest_price)) * 100) < (100 - self.stop_loss):
                 self.trades.append(Trade(
-                    time=current_kline[4],
+                    time=datetime.fromtimestamp(current_kline[0] / 1000),
                     base_coin=self.baseCoin,
                     trade_coin=coin,
                     action="SELL",

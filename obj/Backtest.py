@@ -7,14 +7,12 @@ from datetime import datetime
 from obj.Trade import Trade
 
 class Backtest:
-    def __init__(self, starting_amount, start_datetime, end_datetime, strategy, verbose):
+    def __init__(self, starting_amount, strategy, verbose):
         self.verbose:bool = verbose
         self.start:int = starting_amount
         self.num_trades:int = 0
         self.profitable_trades:int = 0
         self.amount:int = self.start
-        self.startTime = start_datetime
-        self.endTime = end_datetime
         self.strategy = strategy
         self.trades = []
         self.run_backtest()
@@ -51,4 +49,4 @@ class Backtest:
             print(f"Percentage of profitable sells: {(self.profitable_trades / (len(self.strategy.trades) / 2)) * 100}%")
             if self.verbose:
                 for trade in self.strategy.trades:
-                    print(f"{trade.action} {trade.trade_coin} at {trade.price}")
+                    print(f"{trade.time} | {trade.action} {trade.trade_coin} at {trade.price}")
