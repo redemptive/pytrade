@@ -36,7 +36,6 @@ class Strategy:
         for coin in self.tradeCoins:
             open_time[coin] = [int(entry[0]) for entry in self.klines[coin]]
             self.time[coin] = [datetime.fromtimestamp(time / 1000) for time in open_time[coin]]
-            print(self.time[coin])
 
     def calculate_indicator(self, coin):
         if self.indicator == 'MACD':

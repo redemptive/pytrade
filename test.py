@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import unittest
 import time
 
@@ -16,6 +18,91 @@ class TestLiveTrading(unittest.TestCase):
         self.assertEqual(LiveTrading.round_down(3.8, 0), 3)
         self.assertEqual(LiveTrading.round_down(2.97, 1), 2.9)
 
+class TestBacktest(unittest.TestCase):
+
+    def test_single_tradecoin_rsi_8020(self):
+        pytrade = Pytrade(False, {
+            'tradeCoins': 'BTC',
+            'baseCoin': 'USDT',
+            'interval': '1d',
+            'backtest': True,
+            'time': '1 year ago',
+            'debug': False,
+            'verbose': False,
+            'indicator': 'RSI',
+            'strategy': '8020',
+            'stopLoss': 3
+        })
+
+    def test_multiple_tradecoins_rsi_8020(self):
+        pytrade = Pytrade(False, {
+            'tradeCoins': 'BTC,ETH,XRP',
+            'baseCoin': 'USDT',
+            'interval': '1d',
+            'backtest': True,
+            'time': '1 year ago',
+            'debug': False,
+            'verbose': False,
+            'indicator': 'RSI',
+            'strategy': '8020',
+            'stopLoss': 3
+        })
+
+    def test_single_tradecoin_rsi_7030(self):
+        pytrade = Pytrade(False, {
+            'tradeCoins': 'BTC',
+            'baseCoin': 'USDT',
+            'interval': '1d',
+            'backtest': True,
+            'time': '1 year ago',
+            'debug': False,
+            'verbose': False,
+            'indicator': 'RSI',
+            'strategy': '7030',
+            'stopLoss': 3
+        })
+
+    def test_multiple_tradecoins_rsi_7030(self):
+        pytrade = Pytrade(False, {
+            'tradeCoins': 'BTC,ETH,XRP',
+            'baseCoin': 'USDT',
+            'interval': '1d',
+            'backtest': True,
+            'time': '1 year ago',
+            'debug': False,
+            'verbose': False,
+            'indicator': 'RSI',
+            'strategy': '7030',
+            'stopLoss': 3
+        })
+
+    def test_single_tradecoin_macd_cross(self):
+        pytrade = Pytrade(False, {
+            'tradeCoins': 'BTC',
+            'baseCoin': 'USDT',
+            'interval': '1d',
+            'backtest': True,
+            'time': '1 year ago',
+            'debug': False,
+            'verbose': False,
+            'indicator': 'MACD',
+            'strategy': 'CROSS',
+            'stopLoss': 3
+        })
+
+    def test_multiple_tradecoins_macd_cross(self):
+        pytrade = Pytrade(False, {
+            'tradeCoins': 'BTC,ETH,XRP',
+            'baseCoin': 'USDT',
+            'interval': '1d',
+            'backtest': True,
+            'time': '1 year ago',
+            'debug': False,
+            'verbose': False,
+            'indicator': 'MACD',
+            'strategy': 'CROSS',
+            'stopLoss': 3
+        })
 
 if __name__ == '__main__':
     unittest.main()

@@ -1,5 +1,12 @@
 #!/usr/bin/env python3
 
+# Standard libraries
+from types import SimpleNamespace
+import os
+import argparse
+import time
+from datetime import datetime
+
 # Binance imports
 from binance.client import Client
 from binance.websockets import BinanceSocketManager
@@ -8,21 +15,20 @@ from binance.websockets import BinanceSocketManager
 import talib as ta
 import matplotlib.pyplot as plt
 import numpy as np
-from datetime import datetime
-import os
-import argparse
-import time
 
+# Custom objects
 from obj.Strategy import Strategy
 from obj.Backtest import Backtest
 from obj.LiveTrading import LiveTrading
 
 class Pytrade():
-    def __init__(self):
+    def __init__(self, interactive:bool=True, args:object={}):
 
-        self.args:object = self.get_args()
+        if interactive:
+            self.args:object = self.get_args()
+        elif args != {}:
+            self.args = SimpleNamespace(**args)
 
-        #self.symbol:str = f"{self.args.tradeCoins[0]}{self.args.baseCoin}"
         self.kline_interval:str = self.args.interval
 
         self.tradeCoins = self.args.tradeCoins.split(",")
@@ -41,9 +47,8 @@ class Pytrade():
         self.klines = []
 
         if self.args.backtest: self.run_backtest()
-        elif self.args.ml: self.run_ml()
         elif self.args.live: self.run_live_trading()
-        else: print("Please select --backtest (-b), --live (-l) or --ml (-m) mode")
+        else: print("Please select --backtest (-b) or --live (-l) mode")
 
     def get_args(self):
         parser = argparse.ArgumentParser(description="This is PYTRADE")
@@ -52,7 +57,6 @@ class Pytrade():
         group = parser.add_mutually_exclusive_group()
         group.add_argument("-b", "--backtest", action="store_true", help="Backtest some strategies")
         group.add_argument("-l", "--live", action="store_true", help="Live trading")
-        group.add_argument("-m", "--ml", action="store_true", help="Machine learning")
 
         # Other arguments
         parser.add_argument("-T", "--tradeCoins", default="ETH", type=str, help="This is a comma separated list of the coins you wish to trade. Defaults to ETH")
@@ -88,9 +92,6 @@ class Pytrade():
 
         print("Backtesting strategy...")
         Backtest(100, strategy, self.args.verbose)
-    
-    def run_ml(self):
-        MLStrategy(self.client)
 
 if __name__ == "__main__":
     pytrade = Pytrade()
