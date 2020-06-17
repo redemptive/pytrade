@@ -1,0 +1,1 @@
+{"tradeCoins": ["BTC", "ETH", "XRP"], "baseCoin": "USDT", "interval": "1h", "indicator_name": "RSI", "strategy": "8020", "stop_loss": 3}
