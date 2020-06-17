@@ -1,4 +1,5 @@
 # Other imports
+import json
 import talib as ta
 import matplotlib.pyplot as plt
 import numpy as np
@@ -8,22 +9,26 @@ from obj.Trade import Trade
 
 class Strategy:
 
-    def __init__(self, indicator_name:str, strategy_name:str, tradeCoins:list, baseCoin:str, interval:str, klines:dict, stop_loss:int):
-        self.indicator = indicator_name
-        self.strategy = strategy_name
-        self.tradeCoins = tradeCoins
-        self.baseCoin = baseCoin
-        self.interval = interval
-        self.klines = klines
-        self.stop_loss = stop_loss
-        self.time = {}
-        self.trades = []
+    def __init__(self, klines:dict, indicator_name:str, strategy:str, tradeCoins:list, baseCoin:str, interval:str, stop_loss:int):
+        self.indicator:str = indicator_name
+        self.strategy:str = strategy
+        self.tradeCoins:str = tradeCoins
+        self.baseCoin:str = baseCoin
+        self.interval:str = interval
+        self.klines:dict = klines
+        self.stop_loss:str = stop_loss
+        self.time:dict = {}
+        self.trades:list = []
 
         self.highest_price:int = 0
 
-        self.indicator_result = {}
-        self.strategy_result = {}
+        self.indicator_result:dict = {}
+        self.strategy_result:dict = {}
+        
+        self.refresh(klines)
 
+    def refresh(self, klines):
+        self.klines = klines
         for coin in self.tradeCoins:
             self.indicator_result[coin] = self.calculate_indicator(coin)
 
@@ -45,10 +50,8 @@ class Strategy:
             return [macd, macdsignal, macdhist]
 
         elif self.indicator == 'RSI':
-            close = [float(entry[4]) for entry in self.klines[coin]]
-            close_array = np.asarray(close)
-
-            return ta.RSI(close_array, timeperiod=14)
+            # Perform the rsi calculation on the close prices and return it
+            return ta.RSI(np.asarray([float(entry[4]) for entry in self.klines[coin]]), timeperiod=14)
         else: return None
 
     def calculate_strategy(self):

@@ -10,27 +10,20 @@ import math
 from obj.Strategy import Strategy
 
 class LiveTrading:
-    def __init__(self, client:object, trade_coins:list, base_coin:str, 
-                indicator:str, strategy:str, kline_interval:str, 
-                stop_loss:int, verbose:bool, debug:bool):
+    def __init__(self, client:object, strategy:object, klines:dict={}):
 
         self.client:object = client
-        self.trade_coins:list = trade_coins
-        self.base_coin:str = base_coin
-        self.strategy_name:str = strategy
-        self.indicator:str = indicator
-        self.verbose:bool = verbose
-        self.debug:bool = debug
-        self.kline_interval:str = kline_interval
-        self.stop_loss:int = stop_loss
+        self.strategy = strategy
         self.trades = []
+        self.verbose = False
+        self.debug = False
 
         self.precision:dict = {}
-        self.klines:dict = {}
+        self.klines:dict = klines
 
         self.message_no:int = 0
 
-        for coin in trade_coins:
+        for coin in self.strategy.tradeCoins:
             if self.verbose: print(f"Getting precision for {coin}")
             self.precision[coin] = self.get_precision(coin)
             self.klines[coin] = []
@@ -38,16 +31,16 @@ class LiveTrading:
         self.active_order:bool = False
         self.open_trade:bool = False
 
-        self.balance:float = self.get_balance(self.base_coin)
+        self.balance:float = self.get_balance(self.strategy.baseCoin)
         self.starting_balance:float = self.balance
 
         print(f"\nStarting trading with the following:")
-        print(f"Trade coins: {self.trade_coins}")
-        print(f"Starting {self.base_coin}: {self.balance}")
-        print(f"Indicator: {self.indicator}")
-        print(f"Strategy: {self.strategy_name}")
+        print(f"Trade coins: {self.strategy.tradeCoins}")
+        print(f"Starting {self.strategy.baseCoin}: {self.balance}")
+        print(f"Indicator: {self.strategy.indicator}")
+        print(f"Strategy: {self.strategy.strategy}")
 
-        self.open_kline_sockets(self.trade_coins)
+        self.open_kline_sockets(self.strategy.tradeCoins)
 
     def get_balance(self, coin):
         return float(self.client.get_asset_balance(asset=coin)["free"])
@@ -59,7 +52,7 @@ class LiveTrading:
         sockets = []
 
         for coin in coins:
-            sockets.append(f"{coin.lower()}{self.base_coin.lower()}@kline_{self.kline_interval}")
+            sockets.append(f"{coin.lower()}{self.strategy.baseCoin.lower()}@kline_{self.strategy.interval}")
 
         self.kline_socket = self.bm.start_multiplex_socket(sockets, self.process_message)
         self.bm.start()
@@ -77,12 +70,12 @@ class LiveTrading:
         elif msg['e'] == 'error':
             print("Socket error... restarting socket")
             self.bm.close()
-            self.open_kline_sockets(self.trade_coins)
+            self.open_kline_sockets(self.strategy.tradeCoins)
 
     def process_kline(self, kline):
         if kline['x'] == True:
             self.message_no += 1
-            trade_coin = f"{kline['s'][:len(kline['s']) - len(self.base_coin)]}"
+            trade_coin = f"{kline['s'][:len(kline['s']) - len(self.strategy.baseCoin)]}"
             self.klines[trade_coin].append(self.kline_to_ohlcv(kline, self.verbose, self.debug))
 
             if (self.verbose): 
@@ -90,10 +83,10 @@ class LiveTrading:
             
             if (self.debug): print(self.klines)
 
-            if self.message_no == len(self.trade_coins):
+            if self.message_no == len(self.strategy.tradeCoins):
                 self.message_no = 0
                 self.print_with_timestamp("Checking for any actions...")
-                self.strategy = Strategy(self.indicator, self.strategy_name, self.trade_coins, self.base_coin, self.kline_interval, self.klines, self.stop_loss)
+                self.strategy.refresh(self.klines)
                 
                 # If the strategy is returning more trades than we have, there must be new ones
                 if len(self.strategy.trades) > len(self.trades):
@@ -111,11 +104,11 @@ class LiveTrading:
         
 
     def place_buy(self, coin, price):
-        self.balance = self.get_balance(self.base_coin)
+        self.balance = self.get_balance(self.strategy.baseCoin)
         quantity = self.round_down((self.balance * 0.99) / float(price), self.precision[coin])
         print(f"Buying {quantity} {coin} at {price}")
         order = self.client.create_order(
-            symbol=f"{coin}{self.base_coin}",
+            symbol=f"{coin}{self.strategy.baseCoin}",
             side=SIDE_BUY,
             type=ORDER_TYPE_LIMIT,
             timeInForce=TIME_IN_FORCE_GTC,
@@ -130,7 +123,7 @@ class LiveTrading:
         if (quantity != 0):
             print(f"\nSelling {quantity} {coin} at {price}")
             order = self.client.create_order(
-                symbol=f"{coin}{self.base_coin}",
+                symbol=f"{coin}{self.strategy.baseCoin}",
                 side=SIDE_SELL,
                 type=ORDER_TYPE_LIMIT,
                 timeInForce=TIME_IN_FORCE_GTC,
@@ -142,7 +135,7 @@ class LiveTrading:
             print(f"Something went wrong. Bot is trying to sell 0 {coin}")
 
     def get_precision(self, coin):
-        for filt in self.client.get_symbol_info(f"{coin}{self.base_coin}")['filters']:
+        for filt in self.client.get_symbol_info(f"{coin}{self.strategy.baseCoin}")['filters']:
             if filt['filterType'] == 'LOT_SIZE':
                 return int(round(-math.log(float(filt['stepSize']), 10), 0))
 
