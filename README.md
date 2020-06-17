@@ -55,22 +55,24 @@ optional arguments:
 
 ### ./pytrade.py backtest
 ```
-usage: pytrade.py backtest [-h] [-t TIME] [-s STRATEGY]
+usage: pytrade.py backtest [-h] [-t TIME] [-s STRATEGIES]
 
 optional arguments:
   -h, --help            show this help message and exit
   -t TIME, --time TIME  How long ago to backtest from. Defaults to '1 week ago'
-  -s STRATEGY, --strategy STRATEGY
-                        The name of the strategy to use. Defaults to 'test'
+  -s STRATEGIES, --strategies STRATEGIES
+                        A comma separated list of strategies to test. Defaults to 'all' which will
+                        test them all
 ```
 
 ### ./pytrade.py live
 ```
-usage: pytrade.py backtest [-h] [-t TIME] [-s STRATEGY]
+usage: pytrade.py live [-h] [-t TIME] [-s STRATEGY]
 
 optional arguments:
   -h, --help            show this help message and exit
-  -t TIME, --time TIME  How long ago to backtest from. Defaults to '1 week ago'
+  -t TIME, --time TIME  How long ago to gather data to 'seed' the live trading. Defaults to '1 day
+                        ago'
   -s STRATEGY, --strategy STRATEGY
                         The name of the strategy to use. Defaults to 'test'
 ```
