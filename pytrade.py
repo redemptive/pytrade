@@ -20,17 +20,6 @@ class Pytrade():
 
         self.kline_cache: dict = {}
 
-        # Get credentials from env if they are there and quit if they aren't
-        if ("BINANCE_API_KEY" in os.environ):
-            self.api_key:str = os.environ["BINANCE_API_KEY"]
-            self.api_secret:str = os.environ["BINANCE_API_SECRET"]
-            
-            print("\nApi keys loaded from env")
-            self.client = Client(self.api_key, self.api_secret)   
-        else:
-            print("No api keys in env. Please enter api creds in BINANCE_API_KEY and BINANCE_API_SECRET env variables")
-            quit()
-
         if args != []: 
             self.args: object = self.get_args(args)
         else: 
@@ -106,6 +95,7 @@ class Pytrade():
             return parser.parse_args(args)
 
     def run_live_trading(self, args):
+        self.binance_login()
         strategy_data = Pytrade.load_strategy(args.strategy)
         klines = self.get_multi_coin_klines(strategy_data)
         LiveTrading(self.client, Strategy(klines, **strategy_data))
@@ -115,6 +105,18 @@ class Pytrade():
         with open(f'strategies/{name}.json') as raw:
             print(f"Loading strategy {name}")
             return json.load(raw)
+
+    def binance_login(self):
+        # Get credentials from env if they are there and quit if they aren't
+        if ("BINANCE_API_KEY" in os.environ):
+            self.api_key:str = os.environ["BINANCE_API_KEY"]
+            self.api_secret:str = os.environ["BINANCE_API_SECRET"]
+            
+            print("\nApi keys loaded from env")
+            self.client = Client(self.api_key, self.api_secret)   
+        else:
+            print("No api keys in env. Please enter api creds in BINANCE_API_KEY and BINANCE_API_SECRET env variables")
+            quit()
 
     def get_multi_coin_klines(self, strategy_data): 
         klines = {}
@@ -134,6 +136,8 @@ class Pytrade():
         return klines
 
     def run_backtest(self, args):
+
+        self.binance_login()
 
         strategies: list = []
 
