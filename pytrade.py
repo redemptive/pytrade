@@ -18,6 +18,8 @@ class Pytrade():
 
     def __init__(self, args: list = []):
 
+        self.kline_cache: dict = {}
+
         # Get credentials from env if they are there and quit if they aren't
         if ("BINANCE_API_KEY" in os.environ):
             self.api_key:str = os.environ["BINANCE_API_KEY"]
@@ -30,9 +32,9 @@ class Pytrade():
             quit()
 
         if args != []: 
-            self.args:object = self.get_args(args)
+            self.args: object = self.get_args(args)
         else: 
-            self.args:object = self.get_args()
+            self.args: object = self.get_args()
         
         self.args.func(self.args)
 
@@ -105,9 +107,7 @@ class Pytrade():
 
     def run_live_trading(self, args):
         strategy_data = Pytrade.load_strategy(args.strategy)
-
         klines = self.get_multi_coin_klines(strategy_data)
-
         LiveTrading(self.client, Strategy(klines, **strategy_data))
 
     @staticmethod
@@ -116,16 +116,20 @@ class Pytrade():
             print(f"Loading strategy {name}")
             return json.load(raw)
 
-    def get_multi_coin_klines(self, strategy_data):
+    def get_multi_coin_klines(self, strategy_data): 
         klines = {}
 
         for coin in strategy_data["tradeCoins"]:
             symbol = f"{coin}{strategy_data['baseCoin']}"
-            print(f"Getting data for {symbol} starting {self.args.time}...")
-            klines[coin] = self.client.get_historical_klines(symbol=symbol, interval=strategy_data["interval"], start_str=self.args.time)
-
-            if self.args.debug:
-                print(klines)
+            if strategy_data["interval"] in self.kline_cache.keys() and coin in self.kline_cache[strategy_data["interval"]].keys():
+                print(f"Using cached {strategy_data['interval']} interval {symbol} data starting {self.args.time}")
+                klines[coin] = self.kline_cache[strategy_data["interval"]][coin]
+            else:
+                print(f"Getting data for {symbol} starting {self.args.time}...")
+                klines[coin] = self.client.get_historical_klines(symbol=symbol, interval=strategy_data["interval"], start_str=self.args.time)
+                self.kline_cache[strategy_data["interval"]] = klines
+                if self.args.debug:
+                    print(klines)
 
         return klines
 
@@ -142,6 +146,7 @@ class Pytrade():
         results: dict = {}
 
         for strategy_name in strategies:
+            print(f"\n-------{strategy_name}-------")
             strategy_data = Pytrade.load_strategy(strategy_name)
 
             klines = self.get_multi_coin_klines(strategy_data)
@@ -149,19 +154,22 @@ class Pytrade():
             print("\nInitialising strategy...\n")
             strategy = Strategy(klines, **strategy_data)
 
-            print("Backtesting strategy...")
+            print("Backtesting strategy...\n")
             backtest = Backtest(100, strategy, self.args.verbose)
 
             results[strategy_name] = backtest.amount
 
+            print("---------------------")
+
         if len(results) > 1:
             best_performer = ""
+            print()
             for strategy_name in results:
                 print(f"Strategy {strategy_name} ended with {results[strategy_name]}")
                 if best_performer == "" or results[strategy_name] > results[best_performer]:
                     best_performer = strategy_name
 
-            print(f"Best performing strategy was {best_performer} with ending amount of {results[best_performer]}")
+            print(f"\nBest performing strategy was {best_performer} with ending amount of {results[best_performer]}")
 
 
 if __name__ == "__main__":

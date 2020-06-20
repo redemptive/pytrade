@@ -38,7 +38,7 @@ class Backtest:
         self.amount = amount
 
     def print_results(self):
-        print(f"\nTrade coins: {self.strategy.tradeCoins}")
+        print(f"Trade coins: {self.strategy.tradeCoins}")
         print(f"Indicator: {self.strategy.indicator}")
         print(f"Strategy: {self.strategy.strategy}")
         print(f"Interval: {self.strategy.interval}")
