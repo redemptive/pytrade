@@ -1,29 +1,22 @@
 #!/usr/bin/env python3
 
 # Standard libraries
-from types import SimpleNamespace
 import os
 import argparse
-import time
-from datetime import datetime
 import json
 
 # Binance imports
 from binance.client import Client
-from binance.websockets import BinanceSocketManager
-
-# Other imports
-import talib as ta
-import matplotlib.pyplot as plt
-import numpy as np
 
 # Custom objects
 from obj.Strategy import Strategy
 from obj.Backtest import Backtest
 from obj.LiveTrading import LiveTrading
 
+
 class Pytrade():
-    def __init__(self, args:list=[]):
+
+    def __init__(self, args: list = []):
 
         # Get credentials from env if they are there and quit if they aren't
         if ("BINANCE_API_KEY" in os.environ):
@@ -36,8 +29,10 @@ class Pytrade():
             print("No api keys in env. Please enter api creds in BINANCE_API_KEY and BINANCE_API_SECRET env variables")
             quit()
 
-        if args != []: self.args:object = self.get_args(args)
-        else: self.args:object = self.get_args()
+        if args != []: 
+            self.args:object = self.get_args(args)
+        else: 
+            self.args:object = self.get_args()
         
         self.args.func(self.args)
 
@@ -58,7 +53,7 @@ class Pytrade():
 
         elif args.list:
             for item in os.listdir('strategies'):
-                print(item)
+                print(item.split(".")[0])
         
         elif args.delete:
             os.remove(f"strategies/{args.name}.json")
@@ -103,8 +98,10 @@ class Pytrade():
         parser.add_argument("-v", "--verbose", action="store_true", help="Verbose output from backtests")
         parser.add_argument("-d", "--debug", action="store_true", help="Enable debug output")
 
-        if args == []: return parser.parse_args()
-        else: return parser.parse_args(args)
+        if args == []:
+            return parser.parse_args()
+        else:
+            return parser.parse_args(args)
 
     def run_live_trading(self, args):
         strategy_data = Pytrade.load_strategy(args.strategy)
@@ -125,7 +122,7 @@ class Pytrade():
         for coin in strategy_data["tradeCoins"]:
             symbol = f"{coin}{strategy_data['baseCoin']}"
             print(f"Getting data for {symbol} starting {self.args.time}...")
-            klines[coin] = self.client.get_historical_klines(symbol=symbol,interval=strategy_data["interval"], start_str=self.args.time)
+            klines[coin] = self.client.get_historical_klines(symbol=symbol, interval=strategy_data["interval"], start_str=self.args.time)
 
             if self.args.debug:
                 print(klines)
@@ -134,7 +131,7 @@ class Pytrade():
 
     def run_backtest(self, args):
 
-        strategies:list = []
+        strategies: list = []
 
         if args.strategies == "all":
             for item in os.listdir('strategies'):
@@ -142,7 +139,7 @@ class Pytrade():
         else:
             strategies = args.strategies.split(",")
 
-        results:dict = {}
+        results: dict = {}
 
         for strategy_name in strategies:
             strategy_data = Pytrade.load_strategy(strategy_name)
@@ -163,8 +160,10 @@ class Pytrade():
                 print(f"Strategy {strategy_name} ended with {results[strategy_name]}")
                 if best_performer == "" or results[strategy_name] > results[best_performer]:
                     best_performer = strategy_name
-            
+
             print(f"Best performing strategy was {best_performer} with ending amount of {results[best_performer]}")
 
+
 if __name__ == "__main__":
+
     pytrade = Pytrade()

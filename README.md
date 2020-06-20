@@ -8,6 +8,8 @@ A cryptocurrency trading bot written in python
 
 ## Usage
 
+sudo apt install libffi-dev
+
 ### ./pytrade.py
 ```
 usage: pytrade.py [-h] [-v] [-d] {strategy,backtest,live} ...
