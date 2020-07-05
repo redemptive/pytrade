@@ -24,9 +24,4 @@ jobs:
     - name: Build the pytrade image
       run: docker build . --file Dockerfile -t pytrade
     - name: Test the build
-    runs:
-        using: 'docker'
-        image: 'Dockerfile'
-        args:
-          - ${{ inputs.who-to-greet }}
       run: docker run --env BINANCE_API_KEY=${{secrets.BINANCE_API_KEY}} --env BINANCE_API_SECRET=${{secrets.BINANCE_API_SECRET}} -t pytrade bash python ./test.py
