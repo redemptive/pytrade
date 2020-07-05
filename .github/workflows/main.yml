@@ -21,7 +21,7 @@ jobs:
     steps:
     # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
     - uses: actions/checkout@v2
-    - name: Build the tagged Docker image
+    - name: Build the pytrade image
       run: docker build . --file Dockerfile -t pytrade
-    - name: Push the tagged Docker image
-      run: docker run -it pytrade bash ./test.py
+    - name: Test the build
+      run: docker run --env BINANCE_API_KEY=${{secrets.BINANCE_API_KEY}} --env BINANCE_API_SECRET=${{secrets.BINANCE_API_SECRET}} -t pytrade bash ./test.py
