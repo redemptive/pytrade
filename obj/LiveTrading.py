@@ -10,13 +10,13 @@ import math
 from obj.Strategy import Strategy
 
 class LiveTrading:
-    def __init__(self, client:object, strategy:object, klines:dict={}):
+    def __init__(self, client:object, strategy:object, debug:bool, verbose:bool, klines:dict={}):
 
         self.client:object = client
         self.strategy = strategy
         self.trades = []
-        self.verbose = False
-        self.debug = False
+        self.verbose = verbose
+        self.debug = debug
 
         self.precision:dict = {}
         self.klines:dict = klines
