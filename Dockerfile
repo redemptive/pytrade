@@ -19,4 +19,4 @@ RUN pip install numpy==1.19.0
 
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY . .
+COPY . ./
