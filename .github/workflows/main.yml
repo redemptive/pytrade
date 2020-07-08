@@ -19,7 +19,7 @@ jobs:
     - name: Install flake8
       run: python3 -m pip install flake8
     - name: Run flake8 linting
-      run: flake8 . --ignore=E501,E231,E701,E252
+      run: python3 -m flake8 . --ignore=E501,E231,E701,E252
     - name: Build the pytrade image
       run: docker build . --file Dockerfile -t pytrade
     - name: Test the build
