@@ -20,11 +20,11 @@ class Pytrade():
 
         self.kline_cache: dict = {}
 
-        if args != []: 
+        if args != []:
             self.args: object = self.get_args(args)
-        else: 
+        else:
             self.args: object = self.get_args()
-        
+
         self.args.func(self.args)
 
     def manage_strategy(self, args):
@@ -45,7 +45,7 @@ class Pytrade():
         elif args.list:
             for item in os.listdir('strategies'):
                 print(item.split(".")[0])
-        
+
         elif args.delete:
             os.remove(f"strategies/{args.name}.json")
             print(f"Strategy {args.name} deleted")
@@ -111,14 +111,14 @@ class Pytrade():
         if ("BINANCE_API_KEY" in os.environ):
             self.api_key:str = os.environ["BINANCE_API_KEY"]
             self.api_secret:str = os.environ["BINANCE_API_SECRET"]
-            
+
             print("\nApi keys loaded from env")
-            self.client = Client(self.api_key, self.api_secret)   
+            self.client = Client(self.api_key, self.api_secret)
         else:
             print("No api keys in env. Please enter api creds in BINANCE_API_KEY and BINANCE_API_SECRET env variables")
             quit()
 
-    def get_multi_coin_klines(self, strategy_data): 
+    def get_multi_coin_klines(self, strategy_data):
         klines = {}
 
         for coin in strategy_data["tradeCoins"]:

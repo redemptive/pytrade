@@ -1,17 +1,14 @@
 # Binance imports
-from binance.client import Client
 from binance.websockets import BinanceSocketManager
-from binance.enums import *
+from binance.enums import ORDER_TYPE_LIMIT,SIDE_SELL,SIDE_BUY,TIME_IN_FORCE_GTC
 
 import time
-from datetime import datetime
 import math
 
-from obj.Strategy import Strategy
 
 class LiveTrading:
-    def __init__(self, client:object, strategy:object, debug:bool, verbose:bool, klines:dict={}):
 
+    def __init__(self, client:object, strategy:object, debug:bool, verbose:bool, klines:dict={}):
         self.client:object = client
         self.strategy = strategy
         self.trades = []
@@ -34,7 +31,7 @@ class LiveTrading:
         self.balance:float = self.get_balance(self.strategy.baseCoin)
         self.starting_balance:float = self.balance
 
-        print(f"\nStarting trading with the following:")
+        print("\nStarting trading with the following:")
         print(f"Trade coins: {self.strategy.tradeCoins}")
         print(f"Starting {self.strategy.baseCoin}: {self.balance}")
         print(f"Indicator: {self.strategy.indicator}")
@@ -56,7 +53,7 @@ class LiveTrading:
 
         self.kline_socket = self.bm.start_multiplex_socket(sockets, self.process_message)
         self.bm.start()
-    
+
     @staticmethod
     def print_with_timestamp(message):
         print(f"\n{time.strftime('%H:%M:%S', time.localtime())} | {message}")
@@ -73,21 +70,21 @@ class LiveTrading:
             self.open_kline_sockets(self.strategy.tradeCoins)
 
     def process_kline(self, kline):
-        if kline['x'] == True:
+        if kline['x']:
             self.message_no += 1
             trade_coin = f"{kline['s'][:len(kline['s']) - len(self.strategy.baseCoin)]}"
             self.klines[trade_coin].append(self.kline_to_ohlcv(kline, self.verbose, self.debug))
 
-            if (self.verbose): 
+            if (self.verbose):
                 self.print_with_timestamp(f"Obtained closed kline and converted to ohlcv. Count for {kline['s']}: {len(self.klines[trade_coin])}")
-            
+
             if (self.debug): print(self.klines)
 
             if self.message_no == len(self.strategy.tradeCoins):
                 self.message_no = 0
                 self.print_with_timestamp("Checking for any actions...")
                 self.strategy.refresh(self.klines)
-                
+
                 # If the strategy is returning more trades than we have, there must be new ones
                 if len(self.strategy.trades) > len(self.trades):
                     new_trades = self.strategy.trades[len(self.trades):]
@@ -101,7 +98,6 @@ class LiveTrading:
                 if trade.action == "BUY": self.place_buy(trade.trade_coin, trade.price)
                 elif trade.action == "SELL": self.place_sell(trade.trade_coin, trade.price)
                 trade.completed = True
-        
 
     def place_buy(self, coin, price):
         self.balance = self.get_balance(self.strategy.baseCoin)
