@@ -1,22 +1,19 @@
 # Binance imports
-from binance.client import Client
 from binance.websockets import BinanceSocketManager
-from binance.enums import *
+from binance.enums import ORDER_TYPE_LIMIT,SIDE_SELL,SIDE_BUY,TIME_IN_FORCE_GTC
 
 import time
-from datetime import datetime
 import math
 
-from obj.Strategy import Strategy
 
 class LiveTrading:
-    def __init__(self, client:object, strategy:object, debug:bool, verbose:bool, klines:dict={}):
 
+    def __init__(self, client:object, strategy:object, debug:bool, verbose:bool, klines:dict={}):
         self.client:object = client
-        self.strategy = strategy
-        self.trades = []
-        self.verbose = verbose
-        self.debug = debug
+        self.strategy:object = strategy
+        self.trades:list = []
+        self.verbose:bool = verbose
+        self.debug:bool = debug
 
         self.precision:dict = {}
         self.klines:dict = klines
@@ -34,7 +31,7 @@ class LiveTrading:
         self.balance:float = self.get_balance(self.strategy.baseCoin)
         self.starting_balance:float = self.balance
 
-        print(f"\nStarting trading with the following:")
+        print("\nStarting trading with the following:")
         print(f"Trade coins: {self.strategy.tradeCoins}")
         print(f"Starting {self.strategy.baseCoin}: {self.balance}")
         print(f"Indicator: {self.strategy.indicator}")
@@ -56,7 +53,7 @@ class LiveTrading:
 
         self.kline_socket = self.bm.start_multiplex_socket(sockets, self.process_message)
         self.bm.start()
-    
+
     @staticmethod
     def print_with_timestamp(message):
         print(f"\n{time.strftime('%H:%M:%S', time.localtime())} | {message}")
@@ -73,21 +70,21 @@ class LiveTrading:
             self.open_kline_sockets(self.strategy.tradeCoins)
 
     def process_kline(self, kline):
-        if kline['x'] == True:
+        if kline['x']:
             self.message_no += 1
             trade_coin = f"{kline['s'][:len(kline['s']) - len(self.strategy.baseCoin)]}"
             self.klines[trade_coin].append(self.kline_to_ohlcv(kline, self.verbose, self.debug))
 
-            if (self.verbose): 
+            if (self.verbose):
                 self.print_with_timestamp(f"Obtained closed kline and converted to ohlcv. Count for {kline['s']}: {len(self.klines[trade_coin])}")
-            
+
             if (self.debug): print(self.klines)
 
             if self.message_no == len(self.strategy.tradeCoins):
                 self.message_no = 0
                 self.print_with_timestamp("Checking for any actions...")
                 self.strategy.refresh(self.klines)
-                
+
                 # If the strategy is returning more trades than we have, there must be new ones
                 if len(self.strategy.trades) > len(self.trades):
                     new_trades = self.strategy.trades[len(self.trades):]
@@ -101,7 +98,6 @@ class LiveTrading:
                 if trade.action == "BUY": self.place_buy(trade.trade_coin, trade.price)
                 elif trade.action == "SELL": self.place_sell(trade.trade_coin, trade.price)
                 trade.completed = True
-        
 
     def place_buy(self, coin, price):
         self.balance = self.get_balance(self.strategy.baseCoin)
@@ -150,30 +146,18 @@ class LiveTrading:
         # so it is the same as the backtesting historical data returned from API
         # which is what a Strategy accepts
         ohlcv = [
-            # Open time
-            kline['t'],
-            # Open
-            kline['o'],
-            # High
-            kline['h'],
-            # Low
-            kline['l'],
-            # Close
-            kline['c'],
-            # Volume
-            kline['v'],
-            # Close time
-            kline['T'],
-            # Quote asset volume
-            kline['q'],
-            # Number of trades
-            kline['n'],
-            # Taker buy base asset volume
-            kline['V'],
-            # Taker buy quote asset volume
-            kline['Q'],
-            # Ignore
-            kline['B']
+            kline['t'],  # Open time
+            kline['o'],  # Open
+            kline['h'],  # High
+            kline['l'],  # Low
+            kline['c'],  # Close
+            kline['v'],  # Volume
+            kline['T'],  # Close time
+            kline['q'],  # Quote asset volume
+            kline['n'],  # Number of trades
+            kline['V'],  # Taker buy base asset volume
+            kline['Q'],  # Taker buy quote asset volume
+            kline['B']  # Ignore
         ]
 
         if verbose: print("\nUnpacked closed kline to ohlcv")

@@ -1,12 +1,5 @@
-# Other imports
-import talib as ta
-import matplotlib.pyplot as plt
-import numpy as np
-from datetime import datetime
-
-from obj.Trade import Trade
-
 class Backtest:
+
     def __init__(self, starting_amount, strategy, verbose):
         self.verbose:bool = verbose
         self.start:int = starting_amount
@@ -19,11 +12,10 @@ class Backtest:
         self.run_backtest()
         self.print_results()
 
-
     def run_backtest(self):
         amount = self.start
         buy_price = 0
-        #Runs through each kline
+        # Runs through each kline
 
         for coin in self.strategy.tradeCoins:
             self.coin_stats[coin] = {"no_trades": 0, "profit_no": 0}
@@ -37,7 +29,7 @@ class Backtest:
             if trade.action == 'SELL':
                 bought_amount = amount / buy_price
                 self.coin_stats[trade.trade_coin]["no_trades"] += 1
-                if(float(trade.price) > buy_price):    
+                if(float(trade.price) > buy_price):
                     self.profitable_trades += 1
                     self.coin_stats[trade.trade_coin]["profit_no"] += 1
                 amount = bought_amount * float(trade.price)

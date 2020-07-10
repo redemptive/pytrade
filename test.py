@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 
+# flake8: noqa
+
 import unittest
 import time
 import os
@@ -95,47 +97,47 @@ class TestBacktest(unittest.TestCase):
         pytrade = Pytrade(["backtest", "--strategies", "test_backtest_rsi_7030_single", "--time", "1 month ago"])
         os.remove("strategies/test_backtest_rsi_7030_single.json")
 
-#     def test_multiple_tradecoins_rsi_7030(self):
-#         pytrade = Pytrade(False, {
-#             'tradeCoins': 'BTC,ETH,XRP',
-#             'baseCoin': 'USDT',
-#             'interval': '1d',
-#             'backtest': True,
-#             'time': '6 months ago',
-#             'debug': False,
-#             'verbose': False,
-#             'indicator': 'RSI',
-#             'strategy': '7030',
-#             'stopLoss': 3
-#         })
+    def test_multiple_tradecoins_rsi_7030(self):
+        pytrade = Pytrade([
+            'strategy', '--new',
+            '--name', 'test_backtest_rsi_7030_multi',
+            '--tradeCoins', 'BTC,ETH,XRP',
+            '--baseCoin', 'USDT',
+            '--interval', '1d',
+            '--indicator', 'RSI',
+            '--strategy', '7020',
+            '--stopLoss', '3'
+        ])
+        pytrade = Pytrade(["backtest", "--strategies", "test_backtest_rsi_7030_multi", "--time", "1 month ago"])
+        os.remove("strategies/test_backtest_rsi_7030_multi.json")
 
-#     def test_single_tradecoin_macd_cross(self):
-#         pytrade = Pytrade(False, {
-#             'tradeCoins': 'BTC',
-#             'baseCoin': 'USDT',
-#             'interval': '1d',
-#             'backtest': True,
-#             'time': '6 months ago',
-#             'debug': False,
-#             'verbose': False,
-#             'indicator': 'MACD',
-#             'strategy': 'CROSS',
-#             'stopLoss': 3
-#         })
+    def test_single_tradecoin_macd_cross(self):
+        pytrade = Pytrade([
+            'strategy', '--new',
+            '--name', 'test_backtest_macd_cross_single',
+            '--tradeCoins', 'BTC',
+            '--baseCoin', 'USDT',
+            '--interval', '1d',
+            '--indicator', 'MACD',
+            '--strategy', 'CROSS',
+            '--stopLoss', '3'
+        ])
+        pytrade = Pytrade(["backtest", "--strategies", "test_backtest_macd_cross_single", "--time", "1 month ago"])
+        os.remove("strategies/test_backtest_macd_cross_single.json")
 
-#     def test_multiple_tradecoins_macd_cross(self):
-#         pytrade = Pytrade(False, {
-#             'tradeCoins': 'BTC,ETH,XRP',
-#             'baseCoin': 'USDT',
-#             'interval': '1d',
-#             'backtest': True,
-#             'time': '6 months ago',
-#             'debug': False,
-#             'verbose': False,
-#             'indicator': 'MACD',
-#             'strategy': 'CROSS',
-#             'stopLoss': 3
-#         })
+    def test_multiple_tradecoin_macd_cross(self):
+        pytrade = Pytrade([
+            'strategy', '--new',
+            '--name', 'test_backtest_macd_cross_multi',
+            '--tradeCoins', 'BTC,ETH,XRP',
+            '--baseCoin', 'USDT',
+            '--interval', '1d',
+            '--indicator', 'MACD',
+            '--strategy', 'CROSS',
+            '--stopLoss', '3'
+        ])
+        pytrade = Pytrade(["backtest", "--strategies", "test_backtest_macd_cross_multi", "--time", "1 month ago"])
+        os.remove("strategies/test_backtest_macd_cross_multi.json")
 
 if __name__ == '__main__':
     unittest.main()
