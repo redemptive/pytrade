@@ -10,10 +10,10 @@ class LiveTrading:
 
     def __init__(self, client:object, strategy:object, debug:bool, verbose:bool, klines:dict={}):
         self.client:object = client
-        self.strategy = strategy
-        self.trades = []
-        self.verbose = verbose
-        self.debug = debug
+        self.strategy:object = strategy
+        self.trades:list = []
+        self.verbose:bool = verbose
+        self.debug:bool = debug
 
         self.precision:dict = {}
         self.klines:dict = klines
@@ -146,30 +146,18 @@ class LiveTrading:
         # so it is the same as the backtesting historical data returned from API
         # which is what a Strategy accepts
         ohlcv = [
-            # Open time
-            kline['t'],
-            # Open
-            kline['o'],
-            # High
-            kline['h'],
-            # Low
-            kline['l'],
-            # Close
-            kline['c'],
-            # Volume
-            kline['v'],
-            # Close time
-            kline['T'],
-            # Quote asset volume
-            kline['q'],
-            # Number of trades
-            kline['n'],
-            # Taker buy base asset volume
-            kline['V'],
-            # Taker buy quote asset volume
-            kline['Q'],
-            # Ignore
-            kline['B']
+            kline['t'], # Open time
+            kline['o'], # Open
+            kline['h'], # High
+            kline['l'], # Low
+            kline['c'], # Close
+            kline['v'], # Volume
+            kline['T'], # Close time
+            kline['q'], # Quote asset volume
+            kline['n'], # Number of trades
+            kline['V'], # Taker buy base asset volume
+            kline['Q'], # Taker buy quote asset volume
+            kline['B'] # Ignore
         ]
 
         if verbose: print("\nUnpacked closed kline to ohlcv")
