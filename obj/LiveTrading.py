@@ -146,18 +146,18 @@ class LiveTrading:
         # so it is the same as the backtesting historical data returned from API
         # which is what a Strategy accepts
         ohlcv = [
-            kline['t'], # Open time
-            kline['o'], # Open
-            kline['h'], # High
-            kline['l'], # Low
-            kline['c'], # Close
-            kline['v'], # Volume
-            kline['T'], # Close time
-            kline['q'], # Quote asset volume
-            kline['n'], # Number of trades
-            kline['V'], # Taker buy base asset volume
-            kline['Q'], # Taker buy quote asset volume
-            kline['B'] # Ignore
+            kline['t'],  # Open time
+            kline['o'],  # Open
+            kline['h'],  # High
+            kline['l'],  # Low
+            kline['c'],  # Close
+            kline['v'],  # Volume
+            kline['T'],  # Close time
+            kline['q'],  # Quote asset volume
+            kline['n'],  # Number of trades
+            kline['V'],  # Taker buy base asset volume
+            kline['Q'],  # Taker buy quote asset volume
+            kline['B']  # Ignore
         ]
 
         if verbose: print("\nUnpacked closed kline to ohlcv")
