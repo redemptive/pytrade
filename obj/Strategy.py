@@ -1,11 +1,10 @@
 # Other imports
-import json
 import talib as ta
-import matplotlib.pyplot as plt
 import numpy as np
 from datetime import datetime
 
 from obj.Trade import Trade
+
 
 class Strategy:
 
@@ -24,7 +23,7 @@ class Strategy:
 
         self.indicator_result:dict = {}
         self.strategy_result:dict = {}
-        
+
         self.refresh(klines)
 
     def refresh(self, klines):
@@ -65,11 +64,11 @@ class Strategy:
                 for i in range(len(self.indicator_result[self.tradeCoins[-1]])):
                     for coin in self.tradeCoins:
                         if np.isnan(self.indicator_result[coin][0][i]) or np.isnan(self.indicator_result[coin][1][i]): pass
-                        #If both the MACD and signal are well defined, we compare the 2 and decide if a cross has occured
+                        # If both the MACD and signal are well defined, we compare the 2 and decide if a cross has occured
                         else:
                             if self.indicator_result[coin][0][i] > self.indicator_result[coin][1][i]:
                                 if (len(self.trades) == 0) or (self.trades[-1].action != "BUY"):
-                                    if macdabove == False:
+                                    if not macdabove:
                                         macdabove = True
                                         self.trades.append(Trade(
                                             time=self.time[coin][i],
@@ -82,7 +81,7 @@ class Strategy:
                                     macdabove = False
 
                             elif (len(self.trades) > 0) and (self.trades[-1].trade_coin == coin):
-                                if macdabove == True:
+                                if macdabove:
                                     macdabove = False
                                     self.trades.append(Trade(
                                         time=self.time[coin][i],
@@ -108,7 +107,7 @@ class Strategy:
                 if np.isnan(self.indicator_result[coin][i]): pass
                 # If the RSI is well defined, check if over high value or under low
                 else:
-                    if float(self.indicator_result[coin][i]) < low and active_buy == False:
+                    if float(self.indicator_result[coin][i]) < low and not active_buy:
                         if (len(self.trades) == 0) or (self.trades[-1].action != "BUY"):
                             # Appends the timestamp, RSI value at the timestamp, color of dot, buy signal, and the buy price
                             self.trades.append(Trade(
@@ -119,7 +118,7 @@ class Strategy:
                                 price=self.klines[coin][i][4]
                             ))
                             active_buy = True
-                    elif float(self.indicator_result[coin][i]) > high and active_buy == True:
+                    elif float(self.indicator_result[coin][i]) > high and active_buy:
                         if (len(self.trades) > 0) and (self.trades[-1].trade_coin == coin):
                             # Appends the timestamp, RSI value at the timestamp, color of dot, sell signal, and the sell price
                             self.trades.append(Trade(
