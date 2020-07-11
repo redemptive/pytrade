@@ -1,10 +1,8 @@
-## Title
-
 # Pytrade
 
-## Description
+A cryptocurrency trading bot written in python.
 
-A cryptocurrency trading bot written in python
+Create strategies, backtest them and then take those 
 
 ## Installation
 
