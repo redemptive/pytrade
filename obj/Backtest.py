@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from datetime import datetime
 
+
 class Backtest:
 
     def __init__(self, starting_amount:int, strategy:object, verbose:bool, graph:bool):
