@@ -21,6 +21,15 @@ class TestLiveTrading(unittest.TestCase):
         self.assertEqual(LiveTrading.round_down(3.8, 0), 3)
         self.assertEqual(LiveTrading.round_down(2.97, 1), 2.9)
 
+class TestDataSubcommand(unittest.TestCase):
+
+    def test_default_command(self):
+        pytrade = Pytrade(["data"])
+    
+    def test_custom_command(self):
+        pytrade = Pytrade(["data", "--symbol", "XRPBNB", "--time", "1 day ago", "--interval", "1m"])
+
+
 class TestStrategySubcommand(unittest.TestCase):
 
     def test_default_strategy_creation(self):
