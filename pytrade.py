@@ -16,15 +16,11 @@ from obj.LiveTrading import LiveTrading
 
 class Pytrade():
 
-    def __init__(self, args: list = []):
+    def __init__(self, args:list = []):
 
         self.kline_cache: dict = {}
 
-        if args != []:
-            self.args: object = self.get_args(args)
-        else:
-            self.args: object = self.get_args()
-
+        self.args:object = self.get_args(args)
         self.args.func(self.args)
 
     def manage_strategy(self, args):
@@ -139,7 +135,7 @@ class Pytrade():
 
         self.binance_login()
 
-        strategies: list = []
+        strategies:list = []
 
         if args.strategies == "all":
             for item in os.listdir('strategies'):
@@ -147,7 +143,7 @@ class Pytrade():
         else:
             strategies = args.strategies.split(",")
 
-        results: dict = {}
+        results:dict = {}
 
         for strategy_name in strategies:
             print(f"\n-------{strategy_name}-------")

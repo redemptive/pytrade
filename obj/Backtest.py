@@ -1,20 +1,20 @@
 class Backtest:
 
-    def __init__(self, starting_amount, strategy, verbose):
+    def __init__(self, starting_amount:int, strategy:object, verbose:bool):
         self.verbose:bool = verbose
         self.start:int = starting_amount
         self.num_trades:int = 0
         self.profitable_trades:int = 0
         self.amount:int = self.start
         self.coin_stats:dict = {}
-        self.strategy = strategy
-        self.trades = []
+        self.strategy:object = strategy
+        self.trades:list = []
         self.run_backtest()
         self.print_results()
 
     def run_backtest(self):
         amount = self.start
-        buy_price = 0
+        buy_price:float = 0
         # Runs through each kline
 
         for coin in self.strategy.tradeCoins:
