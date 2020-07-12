@@ -4,9 +4,12 @@
 import os
 import argparse
 import json
+from datetime import datetime
 
-# Binance imports
+# Other imports
 from binance.client import Client
+import matplotlib.pyplot as plt
+import numpy as np
 
 # Custom objects
 from obj.Strategy import Strategy
@@ -77,10 +80,18 @@ class Pytrade():
         parser_backtest.set_defaults(func=self.run_backtest)
 
         # live command
-        parser_live = subparsers.add_parser('live', help='Live trading with strategies')
+        parser_live = subparsers.add_parser("live", help="Live trading with strategies")
         parser_live.add_argument("-t", "--time", default="1 day ago", help="How long ago to gather data to 'seed' the live trading. Defaults to '1 day ago'")
         parser_live.add_argument("-s", "--strategy", default="test", help="The name of the strategy to use. Defaults to 'test'")
         parser_live.set_defaults(func=self.run_live_trading)
+
+        # Data command
+        parser_data = subparsers.add_parser("data", help="Helper to gather and display binance market data")
+        parser_data.add_argument("-s", "--symbol", default="ETHBTC", help="The symbol to get the data for. Defaults to 'ETHBTC'")
+        parser_data.add_argument("-t", "--time", default="1 month ago", help="How far back to get the data. Defaults to '1 month ago'")
+        parser_data.add_argument("-i", "--interval", default="1d", help="What interval to get the recieved data for")
+        parser_data.add_argument("-g", "--graph", action="store_true", help="Graph the recieved data")
+        parser_data.set_defaults(func=self.manage_data)
 
         # Common args
         parser.add_argument("-v", "--verbose", action="store_true", help="Verbose output from backtests")
@@ -90,6 +101,26 @@ class Pytrade():
             return parser.parse_args()
         else:
             return parser.parse_args(args)
+
+    def manage_data(self, args):
+        self.binance_login()
+
+        data = self.client.get_historical_klines(symbol=args.symbol, interval=args.interval, start_str=args.time)
+
+        times = [int(entry[0]) for entry in data]
+        times = [datetime.fromtimestamp(time / 1000) for time in times]
+        close_prices = [float(entry[4]) for entry in data]
+
+        for i in range(len(times)):
+            print(f"{times[i]} | {close_prices[i]}")
+
+        if args.graph:
+            close_prices = np.array(close_prices)
+            times = np.array(times)
+
+            plt.plot(times, close_prices)
+            plt.title(args.symbol)
+            plt.show()
 
     def run_live_trading(self, args):
         self.binance_login()
