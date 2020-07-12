@@ -4,9 +4,12 @@
 import os
 import argparse
 import json
+from datetime import datetime
 
-# Binance imports
+# Other imports
 from binance.client import Client
+import matplotlib.pyplot as plt
+import numpy as np
 
 # Custom objects
 from obj.Strategy import Strategy
@@ -104,7 +107,20 @@ class Pytrade():
 
         data = self.client.get_historical_klines(symbol=args.symbol, interval=args.interval, start_str=args.time)
 
-        print(data)
+        times = [int(entry[0]) for entry in data]
+        times = [datetime.fromtimestamp(time / 1000) for time in times]
+        close_prices = [float(entry[4]) for entry in data]
+
+        for i in range(len(times)):
+            print(f"{times[i]} | {close_prices[i]}")
+
+        if args.graph:
+            close_prices = np.array(close_prices)
+            times = np.array(times)
+
+            plt.plot(times, close_prices)
+            plt.title(args.symbol)
+            plt.show()
 
     def run_live_trading(self, args):
         self.binance_login()
