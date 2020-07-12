@@ -1,10 +1,12 @@
-## Title
-
 # Pytrade
 
-## Description
+A cryptocurrency trading bot written in python. Now with graphs!
 
-A cryptocurrency trading bot written in python
+Create strategies, backtest them and then take those and trade for real on binance.
+
+Obviously this is just a tool and I take no responsibility for lost cash.
+
+I just let it run in the docker container on my raspberry pi with only small amounts of funds in binance. Be sensible guys.
 
 ## Installation
 
@@ -47,6 +49,20 @@ If you have an account then set the following env variables:
 
 
 ## Usage
+
+### The Basics
+
+See the section below for full list of commands.
+
+The general workflow when using pytrade is:
+- Create a strategy (though some are included)
+  - `./pytrade.py strategy --new --name hello` will create a basic strategy called hello. Basic now, not the best or anything.
+- Backtest that strategy
+  - `./pytrade.py backtest -s hello -t '6 months ago' --graph` will backtest hello strategy against the last 6 months data. Will also graph the results
+  - `./pytrade.py backtest -s hello,someStrategy,dude -t '1 year ago'` will backtest hello, someStrategy and dude strategies over the last year and tell you which is the best.
+  - `./pytrade.py backtest -t '2 weeks ago'` will backtest all strategies you have over the last two weeks.
+- Trade live with your strategy.
+  - `./pytrade.py live -s hello -t '2 weeks ago'` will trade live with the hello strategy. Will grab the last two weeks of data so your chosen algorithms can get to work right away.
 
 ### ./pytrade.py
 ```
@@ -95,7 +111,7 @@ optional arguments:
 
 ### ./pytrade.py backtest
 ```
-usage: pytrade.py backtest [-h] [-t TIME] [-s STRATEGIES]
+usage: pytrade.py backtest [-h] [-t TIME] [-s STRATEGIES] [-g]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -103,6 +119,7 @@ optional arguments:
   -s STRATEGIES, --strategies STRATEGIES
                         A comma separated list of strategies to test. Defaults to 'all' which will
                         test them all
+  -g, --graph           Graph the backtest
 ```
 
 ### ./pytrade.py live
@@ -115,4 +132,18 @@ optional arguments:
                         ago'
   -s STRATEGY, --strategy STRATEGY
                         The name of the strategy to use. Defaults to 'test'
+```
+
+### ./pytrade.py data
+```
+usage: pytrade.py data [-h] [-s SYMBOL] [-t TIME] [-i INTERVAL] [-g]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -s SYMBOL, --symbol SYMBOL
+                        The symbol to get the data for. Defaults to 'ETHBTC'
+  -t TIME, --time TIME  How far back to get the data. Defaults to '1 month ago'
+  -i INTERVAL, --interval INTERVAL
+                        What interval to get the recieved data for
+  -g, --graph           Graph the recieved data
 ```
