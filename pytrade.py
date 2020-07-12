@@ -16,15 +16,11 @@ from obj.LiveTrading import LiveTrading
 
 class Pytrade():
 
-    def __init__(self, args: list = []):
+    def __init__(self, args:list = []):
 
         self.kline_cache: dict = {}
 
-        if args != []:
-            self.args: object = self.get_args(args)
-        else:
-            self.args: object = self.get_args()
-
+        self.args:object = self.get_args(args)
         self.args.func(self.args)
 
     def manage_strategy(self, args):
@@ -77,6 +73,7 @@ class Pytrade():
         parser_backtest = subparsers.add_parser('backtest', help='Backtest strategies')
         parser_backtest.add_argument("-t", "--time", default="1 week ago", help="How long ago to backtest from. Defaults to '1 week ago'")
         parser_backtest.add_argument("-s", "--strategies", default="all", type=str, help="A comma separated list of strategies to test. Defaults to 'all' which will test them all")
+        parser_backtest.add_argument("-g", "--graph", action="store_true", help="Graph the backtest")
         parser_backtest.set_defaults(func=self.run_backtest)
 
         # live command
@@ -139,7 +136,7 @@ class Pytrade():
 
         self.binance_login()
 
-        strategies: list = []
+        strategies:list = []
 
         if args.strategies == "all":
             for item in os.listdir('strategies'):
@@ -147,7 +144,7 @@ class Pytrade():
         else:
             strategies = args.strategies.split(",")
 
-        results: dict = {}
+        results:dict = {}
 
         for strategy_name in strategies:
             print(f"\n-------{strategy_name}-------")
@@ -159,7 +156,7 @@ class Pytrade():
             strategy = Strategy(klines, **strategy_data)
 
             print("Backtesting strategy...\n")
-            backtest = Backtest(100, strategy, self.args.verbose)
+            backtest = Backtest(100, strategy, self.args.verbose, self.args.graph)
 
             results[strategy_name] = backtest.amount
 
