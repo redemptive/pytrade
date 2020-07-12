@@ -1,6 +1,6 @@
 # Pytrade
 
-A cryptocurrency trading bot written in python.
+A cryptocurrency trading bot written in python. Now with graphs!
 
 Create strategies, backtest them and then take those and trade for real on binance.
 
@@ -58,7 +58,7 @@ The general workflow when using pytrade is:
 - Create a strategy (though some are included)
   - `./pytrade.py strategy --new --name hello` will create a basic strategy called hello. Basic now, not the best or anything.
 - Backtest that strategy
-  - `./pytrade.py backtest -s hello -t '6 months ago'` will backtest hello strategy against the last 6 months data.
+  - `./pytrade.py backtest -s hello -t '6 months ago' --graph` will backtest hello strategy against the last 6 months data. Will also graph the results
   - `./pytrade.py backtest -s hello,someStrategy,dude -t '1 year ago'` will backtest hello, someStrategy and dude strategies over the last year and tell you which is the best.
   - `./pytrade.py backtest -t '2 weeks ago'` will backtest all strategies you have over the last two weeks.
 - Trade live with your strategy.
@@ -111,7 +111,7 @@ optional arguments:
 
 ### ./pytrade.py backtest
 ```
-usage: pytrade.py backtest [-h] [-t TIME] [-s STRATEGIES]
+usage: pytrade.py backtest [-h] [-t TIME] [-s STRATEGIES] [-g]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -119,6 +119,7 @@ optional arguments:
   -s STRATEGIES, --strategies STRATEGIES
                         A comma separated list of strategies to test. Defaults to 'all' which will
                         test them all
+  -g, --graph           Graph the backtest
 ```
 
 ### ./pytrade.py live

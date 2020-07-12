@@ -73,6 +73,7 @@ class Pytrade():
         parser_backtest = subparsers.add_parser('backtest', help='Backtest strategies')
         parser_backtest.add_argument("-t", "--time", default="1 week ago", help="How long ago to backtest from. Defaults to '1 week ago'")
         parser_backtest.add_argument("-s", "--strategies", default="all", type=str, help="A comma separated list of strategies to test. Defaults to 'all' which will test them all")
+        parser_backtest.add_argument("-g", "--graph", action="store_true", help="Graph the backtest")
         parser_backtest.set_defaults(func=self.run_backtest)
 
         # live command
@@ -155,7 +156,7 @@ class Pytrade():
             strategy = Strategy(klines, **strategy_data)
 
             print("Backtesting strategy...\n")
-            backtest = Backtest(100, strategy, self.args.verbose)
+            backtest = Backtest(100, strategy, self.args.verbose, self.args.graph)
 
             results[strategy_name] = backtest.amount
 

@@ -1,7 +1,12 @@
+import matplotlib.pyplot as plt
+import numpy as np
+from datetime import datetime
+
 class Backtest:
 
-    def __init__(self, starting_amount:int, strategy:object, verbose:bool):
+    def __init__(self, starting_amount:int, strategy:object, verbose:bool, graph:bool):
         self.verbose:bool = verbose
+        self.graph:bool = graph
         self.start:int = starting_amount
         self.num_trades:int = 0
         self.profitable_trades:int = 0
@@ -38,6 +43,7 @@ class Backtest:
 
     def print_results(self):
         print(f"Trade coins: {self.strategy.tradeCoins}")
+        print(f"Base coin: {self.strategy.baseCoin}")
         print(f"Indicator: {self.strategy.indicator}")
         print(f"Strategy: {self.strategy.strategy}")
         print(f"Interval: {self.strategy.interval}")
@@ -56,3 +62,29 @@ class Backtest:
                 print("\nTrades:")
                 for trade in self.strategy.trades:
                     print(f"- {trade.time} | {trade.action} {trade.trade_coin} at {trade.price}")
+        if self.graph:
+            for coin in self.strategy.tradeCoins:
+                close_prices = np.array([float(entry[4]) for entry in self.strategy.klines[coin]])
+                times = [int(entry[0]) for entry in self.strategy.klines[coin]]
+                times = np.array([datetime.fromtimestamp(time / 1000) for time in times])
+
+                sell_times:list = []
+                buy_times:list = []
+                buy_prices:list = []
+                sell_prices:list = []
+                for trade in self.strategy.trades:
+                    if trade.action == "SELL" and trade.trade_coin == coin:
+                        sell_times.append(trade.time)
+                        sell_prices.append(float(trade.price))
+                    elif trade.action == "BUY" and trade.trade_coin == coin:
+                        buy_times.append(trade.time)
+                        buy_prices.append(float(trade.price))
+
+                sell_prices = np.array(sell_prices)
+                buy_prices = np.array(buy_prices)
+                sell_times = np.array(sell_times)
+                buy_times = np.array(buy_times)
+
+                plt.plot(times, close_prices, buy_times, buy_prices, 'go', sell_times, sell_prices, 'ro')
+                plt.title(f"{coin}{self.strategy.baseCoin}")
+                plt.show()
