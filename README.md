@@ -133,3 +133,17 @@ optional arguments:
   -s STRATEGY, --strategy STRATEGY
                         The name of the strategy to use. Defaults to 'test'
 ```
+
+### ./pytrade.py data
+```
+usage: pytrade.py data [-h] [-s SYMBOL] [-t TIME] [-i INTERVAL] [-g]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -s SYMBOL, --symbol SYMBOL
+                        The symbol to get the data for. Defaults to 'ETHBTC'
+  -t TIME, --time TIME  How far back to get the data. Defaults to '1 month ago'
+  -i INTERVAL, --interval INTERVAL
+                        What interval to get the recieved data for
+  -g, --graph           Graph the recieved data
+```
