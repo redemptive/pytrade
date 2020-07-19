@@ -1,9 +1,9 @@
 # Other imports
-import talib as ta
+import ta
 import numpy as np
-from datetime import datetime
 
 from obj.Trade import Trade
+from obj.Data import Data
 
 
 class Strategy:
@@ -18,6 +18,7 @@ class Strategy:
         self.stop_loss:str = stop_loss
         self.time:dict = {}
         self.trades:list = []
+        self.data:dict = {}
 
         self.highest_price:int = 0
 
@@ -29,66 +30,58 @@ class Strategy:
     def refresh(self, klines):
         self.klines = klines
         for coin in self.tradeCoins:
-            self.indicator_result[coin] = self.calculate_indicator(coin)
+            self.data[coin] = Data.process_raw_historic_data(klines[coin])
+            self.calculate_indicator(coin)
 
         self.calculate_strategy()
 
-    def set_time(self):
-        open_time = {}
-        self.time = {}
-
-        for coin in self.tradeCoins:
-            open_time[coin] = [int(entry[0]) for entry in self.klines[coin]]
-            self.time[coin] = [datetime.fromtimestamp(time / 1000) for time in open_time[coin]]
-
     def calculate_indicator(self, coin):
         if self.indicator == 'MACD':
-            close_array = np.asarray([float(entry[4]) for entry in self.klines[coin]])
-            macd, macdsignal, macdhist = ta.MACD(close_array, fastperiod=12, slowperiod=26, signalperiod=9)
-
-            return [macd, macdsignal, macdhist]
-
+            macd = ta.trend.MACD(self.data[coin]["close"], n_fast=12, n_slow=26, n_sign=9)
+            self.data[coin]["MACD"] = macd.macd()
+            self.data[coin]["MACD_diff"] = macd.macd_diff()
+            self.data[coin]["MACD_signal"] = macd.macd_signal()
+            print(self.data[coin])
         elif self.indicator == 'RSI':
-            # Perform the rsi calculation on the close prices and return it
-            return ta.RSI(np.asarray([float(entry[4]) for entry in self.klines[coin]]), timeperiod=14)
+            self.data[coin]["RSI"] = ta.momentum.RSIIndicator(close=self.data[coin]["close"], n=14).rsi()
+            print(self.data[coin])
         else: return None
 
     def calculate_strategy(self):
         if self.indicator == 'MACD':
 
             if self.strategy == 'CROSS':
-                self.set_time()
                 self.trades = []
                 macdabove = False
                 # For each time in klines, go through each trade coin
-                for i in range(len(self.indicator_result[self.tradeCoins[-1]])):
+                for i in range(len(self.data[self.tradeCoins[-1]])):
                     for coin in self.tradeCoins:
-                        if np.isnan(self.indicator_result[coin][0][i]) or np.isnan(self.indicator_result[coin][1][i]): pass
+                        if np.isnan(self.data[coin]["MACD"][i]) or np.isnan(self.data[coin]["MACD_signal"][i]): pass
                         # If both the MACD and signal are well defined, we compare the 2 and decide if a cross has occured
                         else:
-                            if self.indicator_result[coin][0][i] > self.indicator_result[coin][1][i]:
+                            if self.data[coin]["MACD"][i] > self.data[coin]["MACD_signal"][i]:
                                 if (len(self.trades) == 0) or (self.trades[-1].action != "BUY"):
                                     if not macdabove:
                                         macdabove = True
                                         self.trades.append(Trade(
-                                            time=self.time[coin][i],
+                                            time=self.data[coin]["close_time"][i],
                                             base_coin=self.baseCoin,
                                             trade_coin=coin,
                                             action="BUY",
-                                            price=self.klines[coin][i][4]
+                                            price=self.data[coin]["close"][i]
                                         ))
-                                elif self.check_stop_loss(self.klines[coin][i], coin):
+                                elif self.check_stop_loss(self.data[coin]["close"][i], coin, self.data[coin]["close_time"][i]):
                                     macdabove = False
 
                             elif (len(self.trades) > 0) and (self.trades[-1].trade_coin == coin):
                                 if macdabove:
                                     macdabove = False
                                     self.trades.append(Trade(
-                                        time=self.time[coin][i],
+                                        time=self.data[coin]["close_time"][i],
                                         base_coin=self.baseCoin,
                                         trade_coin=coin,
                                         action="SELL",
-                                        price=self.klines[coin][i][4]
+                                        price=self.data[coin]["close"][i]
                                     ))
             else: return None
         elif self.indicator == 'RSI':
@@ -98,51 +91,50 @@ class Strategy:
 
     def calculate_rsi(self, high, low):
 
-        self.set_time()
         self.trades = []
         active_buy = False
         # Runs through each timestamp in order
-        for i in range(len(self.indicator_result[self.tradeCoins[-1]])):
+        for i in range(len(self.data[self.tradeCoins[-1]])):
             for coin in self.tradeCoins:
-                if np.isnan(self.indicator_result[coin][i]): pass
+                if np.isnan(self.data[coin]["RSI"][i]): pass
                 # If the RSI is well defined, check if over high value or under low
                 else:
-                    if float(self.indicator_result[coin][i]) < low and not active_buy:
+                    if self.data[coin]["RSI"][i] < low and not active_buy:
                         if (len(self.trades) == 0) or (self.trades[-1].action != "BUY"):
                             # Appends the timestamp, RSI value at the timestamp, color of dot, buy signal, and the buy price
                             self.trades.append(Trade(
-                                time=self.time[coin][i],
+                                time=self.data[coin]["close_time"][i],
                                 base_coin=self.baseCoin,
                                 trade_coin=coin,
                                 action="BUY",
-                                price=self.klines[coin][i][4]
+                                price=self.data[coin]["close"][i]
                             ))
                             active_buy = True
-                    elif float(self.indicator_result[coin][i]) > high and active_buy:
+                    elif self.data[coin]["RSI"][i] > high and active_buy:
                         if (len(self.trades) > 0) and (self.trades[-1].trade_coin == coin):
                             # Appends the timestamp, RSI value at the timestamp, color of dot, sell signal, and the sell price
                             self.trades.append(Trade(
-                                time=self.time[coin][i],
+                                time=self.data[coin]["close_time"][i],
                                 base_coin=self.baseCoin,
                                 trade_coin=coin,
                                 action="SELL",
-                                price=self.klines[coin][i][4]
+                                price=self.data[coin]["close"][i]
                             ))
                             active_buy = False
-                    elif (self.check_stop_loss(self.klines[coin][i], coin)):
+                    elif (self.check_stop_loss(self.data[coin]["close"][i], coin, self.data[coin]["close_time"][i])):
                         active_buy = False
 
-    def check_stop_loss(self, current_kline, coin):
+    def check_stop_loss(self, current_price, coin, time):
         if (len(self.trades) > 0) and (self.trades[-1].action == "BUY") and (self.trades[-1].trade_coin == coin):
-            if float(self.highest_price) < float(current_kline[4]):
-                self.highest_price = current_kline[4]
-            if ((float(current_kline[4]) / float(self.highest_price)) * 100) < (100 - self.stop_loss):
+            if float(self.highest_price) < float(current_price):
+                self.highest_price = current_price
+            if ((float(current_price) / float(self.highest_price)) * 100) < (100 - self.stop_loss):
                 self.trades.append(Trade(
-                    time=datetime.fromtimestamp(current_kline[0] / 1000),
+                    time=time,
                     base_coin=self.baseCoin,
                     trade_coin=coin,
                     action="SELL",
-                    price=current_kline[4]
+                    price=current_price
                 ))
                 return True
         return False
