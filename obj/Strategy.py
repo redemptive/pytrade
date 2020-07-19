@@ -14,21 +14,13 @@ class Strategy:
         self.tradeCoins:str = tradeCoins
         self.baseCoin:str = baseCoin
         self.interval:str = interval
-        self.klines:dict = klines
         self.stop_loss:str = stop_loss
-        self.time:dict = {}
         self.trades:list = []
         self.data:dict = {}
-
-        self.highest_price:int = 0
-
-        self.indicator_result:dict = {}
-        self.strategy_result:dict = {}
 
         self.refresh(klines)
 
     def refresh(self, klines):
-        self.klines = klines
         for coin in self.tradeCoins:
             self.data[coin] = Data.process_raw_historic_data(klines[coin])
             self.calculate_indicator(coin)
@@ -63,26 +55,14 @@ class Strategy:
                                 if (len(self.trades) == 0) or (self.trades[-1].action != "BUY"):
                                     if not macdabove:
                                         macdabove = True
-                                        self.trades.append(Trade(
-                                            time=self.data[coin]["close_time"][i],
-                                            base_coin=self.baseCoin,
-                                            trade_coin=coin,
-                                            action="BUY",
-                                            price=self.data[coin]["close"][i]
-                                        ))
-                                elif self.check_stop_loss(self.data[coin]["close"][i], coin, self.data[coin]["close_time"][i]):
+                                        self.trades.append(Trade.new("BUY", self.baseCoin, coin, self.data[coin].loc[i, :]))
+                                elif self.check_stop_loss(coin, self.data[coin].loc[i, :]):
                                     macdabove = False
 
                             elif (len(self.trades) > 0) and (self.trades[-1].trade_coin == coin):
                                 if macdabove:
                                     macdabove = False
-                                    self.trades.append(Trade(
-                                        time=self.data[coin]["close_time"][i],
-                                        base_coin=self.baseCoin,
-                                        trade_coin=coin,
-                                        action="SELL",
-                                        price=self.data[coin]["close"][i]
-                                    ))
+                                    self.trades.append(Trade.new("SELL", self.baseCoin, coin, self.data[coin].loc[i, :]))
             else: return None
         elif self.indicator == 'RSI':
             if self.strategy == '7030': return self.calculate_rsi(70, 30)
@@ -101,40 +81,19 @@ class Strategy:
                 else:
                     if self.data[coin]["RSI"][i] < low and not active_buy:
                         if (len(self.trades) == 0) or (self.trades[-1].action != "BUY"):
-                            # Appends the timestamp, RSI value at the timestamp, color of dot, buy signal, and the buy price
-                            self.trades.append(Trade(
-                                time=self.data[coin]["close_time"][i],
-                                base_coin=self.baseCoin,
-                                trade_coin=coin,
-                                action="BUY",
-                                price=self.data[coin]["close"][i]
-                            ))
+                            self.trades.append(Trade.new("BUY", self.baseCoin, coin, self.data[coin].loc[i, :]))
                             active_buy = True
                     elif self.data[coin]["RSI"][i] > high and active_buy:
                         if (len(self.trades) > 0) and (self.trades[-1].trade_coin == coin):
-                            # Appends the timestamp, RSI value at the timestamp, color of dot, sell signal, and the sell price
-                            self.trades.append(Trade(
-                                time=self.data[coin]["close_time"][i],
-                                base_coin=self.baseCoin,
-                                trade_coin=coin,
-                                action="SELL",
-                                price=self.data[coin]["close"][i]
-                            ))
+                            self.trades.append(Trade.new("SELL", self.baseCoin, coin, self.data[coin].loc[i, :]))
                             active_buy = False
-                    elif (self.check_stop_loss(self.data[coin]["close"][i], coin, self.data[coin]["close_time"][i])):
+                    elif (self.check_stop_loss(coin, self.data[coin].loc[i, :])):
                         active_buy = False
 
-    def check_stop_loss(self, current_price, coin, time):
+    def check_stop_loss(self, coin, df):
         if (len(self.trades) > 0) and (self.trades[-1].action == "BUY") and (self.trades[-1].trade_coin == coin):
-            if float(self.highest_price) < float(current_price):
-                self.highest_price = current_price
-            if ((float(current_price) / float(self.highest_price)) * 100) < (100 - self.stop_loss):
-                self.trades.append(Trade(
-                    time=time,
-                    base_coin=self.baseCoin,
-                    trade_coin=coin,
-                    action="SELL",
-                    price=current_price
-                ))
+            sl_price = (self.trades[-1].price - (self.trades[-1].price * (self.stop_loss / 100)))
+            if df["close"] < sl_price:
+                self.trades.append(Trade.new("SELL", self.baseCoin, coin, df, f"Stop loss, price < {sl_price}"))
                 return True
         return False

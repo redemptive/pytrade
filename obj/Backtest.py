@@ -61,7 +61,7 @@ class Backtest:
                         print(f"- {coin}: {stats['no_trades']} trades")
                 print("\nTrades:")
                 for trade in self.strategy.trades:
-                    print(f"- {trade.time} | {trade.action} {trade.trade_coin} at {trade.price}")
+                    print(f"- {trade.time} | {trade.action} {trade.trade_coin} at {trade.price}. Comment: {trade.comment}")
         if self.graph:
             for coin in self.strategy.tradeCoins:
 
@@ -88,5 +88,5 @@ class Backtest:
                     plt.plot(data["close_time"], data["close"], data["close_time"], data["RSI"], buy_times, buy_prices, "go", sell_times, sell_prices, "ro")
 
                 # plt.plot(times, close_prices, buy_times, buy_prices, "go", sell_times, sell_prices, "ro")
-                plt.title(f"{coin}{self.strategy.baseCoin}")
-                plt.show()
+                #plt.title(f"{coin}{self.strategy.baseCoin}")
+                #plt.show()
