@@ -1,5 +1,5 @@
 numpy==1.19.0
 python-binance==0.7.5
-matplotlib==3.2.1
+matplotlib==3.2.2
 ta==0.5.25
-pandas==1.0.3
+pandas==1.0.5
