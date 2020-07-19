@@ -8,7 +8,7 @@ class Trade:
         self.price:str = price
         self.completed:bool = completed
         self.comment:str = comment
-    
+
     @staticmethod
     def new(action, base_coin, trade_coin, df, comment:str="none"):
         return Trade(

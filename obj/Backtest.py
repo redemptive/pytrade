@@ -88,5 +88,5 @@ class Backtest:
                     plt.plot(data["close_time"], data["close"], data["close_time"], data["RSI"], buy_times, buy_prices, "go", sell_times, sell_prices, "ro")
 
                 # plt.plot(times, close_prices, buy_times, buy_prices, "go", sell_times, sell_prices, "ro")
-                #plt.title(f"{coin}{self.strategy.baseCoin}")
-                #plt.show()
+                # plt.title(f"{coin}{self.strategy.baseCoin}")
+                # plt.show()
