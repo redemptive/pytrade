@@ -86,7 +86,8 @@ class Backtest:
 
                 if self.strategy.indicator == "RSI":
                     plt.plot(data["close_time"], data["close"], data["close_time"], data["RSI"], buy_times, buy_prices, "go", sell_times, sell_prices, "ro")
+                elif self.strategy.indicator == "MACD":
+                    plt.plot(data["close_time"], data["close"], data["close_time"], data["MACD"], data["close_time"], data["MACD_signal"], buy_times, buy_prices, "go", sell_times, sell_prices, "ro")
 
-                # plt.plot(times, close_prices, buy_times, buy_prices, "go", sell_times, sell_prices, "ro")
-                # plt.title(f"{coin}{self.strategy.baseCoin}")
-                # plt.show()
+                plt.title(f"{coin}{self.strategy.baseCoin}")
+                plt.show()

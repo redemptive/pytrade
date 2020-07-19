@@ -83,7 +83,7 @@ class LiveTrading:
             if self.message_no == len(self.strategy.tradeCoins):
                 self.message_no = 0
                 self.print_with_timestamp("Checking for any actions...")
-                self.strategy.refresh(self.klines)
+                self.strategy.refresh(self.klines, trade_coin)
 
                 # If the strategy is returning more trades than we have, there must be new ones
                 if len(self.strategy.trades) > len(self.trades):

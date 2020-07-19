@@ -17,15 +17,31 @@ class Strategy:
         self.stop_loss:str = stop_loss
         self.trades:list = []
         self.data:dict = {}
-
         self.refresh(klines)
 
+    def filter_trades(self, trades):
+        # Takes the trades from all trade coins and makes sure there is only one trade at once
+        if trades:
+            active_trade = False
+            trades.sort(key=lambda x: x.time)
+            for trade in trades:
+                if not active_trade and trade.action == "BUY":
+                    active_trade = True
+                    self.trades.append(trade)
+                elif active_trade and trade.trade_coin == self.trades[-1].trade_coin and trade.action == "SELL":
+                    active_trade = False
+                    self.trades.append(trade)
+
     def refresh(self, klines):
+        trades = []
         for coin in self.tradeCoins:
             self.data[coin] = Data.process_raw_historic_data(klines[coin])
             self.calculate_indicator(coin)
+            new_trades = self.calculate_strategy(self.data[coin], coin)
+            if new_trades:
+                trades += new_trades
 
-        self.calculate_strategy()
+        self.filter_trades(trades)
 
     def calculate_indicator(self, coin):
         if self.indicator == 'MACD':
@@ -33,67 +49,53 @@ class Strategy:
             self.data[coin]["MACD"] = macd.macd()
             self.data[coin]["MACD_diff"] = macd.macd_diff()
             self.data[coin]["MACD_signal"] = macd.macd_signal()
-            print(self.data[coin])
         elif self.indicator == 'RSI':
             self.data[coin]["RSI"] = ta.momentum.RSIIndicator(close=self.data[coin]["close"], n=14).rsi()
-            print(self.data[coin])
         else: return None
 
-    def calculate_strategy(self):
+    def calculate_strategy(self, df, coin):
         if self.indicator == 'MACD':
-
             if self.strategy == 'CROSS':
-                self.trades = []
-                macdabove = False
-                # For each time in klines, go through each trade coin
-                for i in range(len(self.data[self.tradeCoins[-1]])):
-                    for coin in self.tradeCoins:
-                        if np.isnan(self.data[coin]["MACD"][i]) or np.isnan(self.data[coin]["MACD_signal"][i]): pass
-                        # If both the MACD and signal are well defined, we compare the 2 and decide if a cross has occured
-                        else:
-                            if self.data[coin]["MACD"][i] > self.data[coin]["MACD_signal"][i]:
-                                if (len(self.trades) == 0) or (self.trades[-1].action != "BUY"):
-                                    if not macdabove:
-                                        macdabove = True
-                                        self.trades.append(Trade.new("BUY", self.baseCoin, coin, self.data[coin].loc[i, :]))
-                                elif self.check_stop_loss(coin, self.data[coin].loc[i, :]):
-                                    macdabove = False
-
-                            elif (len(self.trades) > 0) and (self.trades[-1].trade_coin == coin):
-                                if macdabove:
-                                    macdabove = False
-                                    self.trades.append(Trade.new("SELL", self.baseCoin, coin, self.data[coin].loc[i, :]))
+                trades = []
+                active_buy = False
+                for row in df.itertuples():
+                    if np.isnan(row.MACD) or np.isnan(row.MACD_signal): pass
+                    else:
+                        if row.MACD > row.MACD_signal and not active_buy:
+                            active_buy = True
+                            trades.append(Trade.new("BUY", self.baseCoin, coin, row))
+                        elif row.MACD < row.MACD_signal and active_buy:
+                            active_buy = False
+                            trades.append(Trade.new("SELL", self.baseCoin, coin, row))
+                        elif trades and self.check_stop_loss(trades[-1].price, row.close):
+                            trades.append(Trade.new("SELL", self.baseCoin, coin, row, "Stop loss"))
+                            active_buy = False
+                return trades
             else: return None
         elif self.indicator == 'RSI':
-            if self.strategy == '7030': return self.calculate_rsi(70, 30)
-            elif self.strategy == '8020': return self.calculate_rsi(80, 20)
+            if self.strategy == '7030': return self.calculate_rsi(70, 30, df, coin)
+            elif self.strategy == '8020': return self.calculate_rsi(80, 20, df, coin)
         else: return None
 
-    def calculate_rsi(self, high, low):
-
-        self.trades = []
+    def calculate_rsi(self, high, low, df, coin):
+        trades = []
         active_buy = False
         # Runs through each timestamp in order
-        for i in range(len(self.data[self.tradeCoins[-1]])):
-            for coin in self.tradeCoins:
-                if np.isnan(self.data[coin]["RSI"][i]): pass
-                # If the RSI is well defined, check if over high value or under low
-                else:
-                    if self.data[coin]["RSI"][i] < low and not active_buy:
-                        if (len(self.trades) == 0) or (self.trades[-1].action != "BUY"):
-                            self.trades.append(Trade.new("BUY", self.baseCoin, coin, self.data[coin].loc[i, :]))
-                            active_buy = True
-                    elif self.data[coin]["RSI"][i] > high and active_buy:
-                        if (len(self.trades) > 0) and (self.trades[-1].trade_coin == coin):
-                            self.trades.append(Trade.new("SELL", self.baseCoin, coin, self.data[coin].loc[i, :]))
-                            active_buy = False
-                    elif (self.check_stop_loss(coin, self.data[coin].loc[i, :])):
-                        active_buy = False
+        for row in df.itertuples():
+            if np.isnan(row.RSI): pass
+            else:
+                if row.RSI < low and not active_buy:
+                    trades.append(Trade.new("BUY", self.baseCoin, coin, row))
+                    active_buy = True
+                elif row.RSI > high and active_buy:
+                    trades.append(Trade.new("SELL", self.baseCoin, coin, row))
+                    active_buy = False
+                elif trades and self.check_stop_loss(trades[-1].price, row.close):
+                    trades.append(Trade.new("SELL", self.baseCoin, coin, row, "Stop loss"))
+                    active_buy = False
+        return trades
 
-    def check_stop_loss(self, coin, df):
-        if (len(self.trades) > 0) and (self.trades[-1].action == "BUY") and (self.trades[-1].trade_coin == coin):
-            sl_price = (self.trades[-1].price - (self.trades[-1].price * (self.stop_loss / 100)))
-            if df["close"] < sl_price:
-                self.trades.append(Trade.new("SELL", self.baseCoin, coin, df, f"Stop loss, price < {sl_price}"))
-                return True
-        return False
+    def check_stop_loss(self, bought_price, current_price):
+        sl_price = (bought_price - (bought_price * (self.stop_loss / 100)))
+        if current_price < sl_price: return True
+        else: return False

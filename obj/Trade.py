@@ -12,10 +12,10 @@ class Trade:
     @staticmethod
     def new(action, base_coin, trade_coin, df, comment:str="none"):
         return Trade(
-            time=df["close_time"],
+            time=df.close_time,
             base_coin=base_coin,
             trade_coin=trade_coin,
             action=action,
-            price=df["close"],
+            price=df.close,
             comment=comment
         )
