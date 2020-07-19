@@ -1,1 +1,1 @@
-{"tradeCoins": ["LTC", "ETH", "XRP"], "baseCoin": "BTC", "interval": "1m", "indicator_name": "RSI", "strategy": "7030", "stop_loss": 3}
+{"tradeCoins": ["LTC", "ETH", "XRP"], "baseCoin": "BTC", "interval": "1d", "indicator_name": "RSI", "strategy": "7030", "stop_loss": 3}
