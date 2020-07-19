@@ -1,6 +1,5 @@
 import matplotlib.pyplot as plt
 import numpy as np
-from datetime import datetime
 
 
 class Backtest:
@@ -62,12 +61,11 @@ class Backtest:
                         print(f"- {coin}: {stats['no_trades']} trades")
                 print("\nTrades:")
                 for trade in self.strategy.trades:
-                    print(f"- {trade.time} | {trade.action} {trade.trade_coin} at {trade.price}")
+                    print(f"- {trade.time} | {trade.action} {trade.trade_coin} at {trade.price}. Comment: {trade.comment}")
         if self.graph:
             for coin in self.strategy.tradeCoins:
-                close_prices = np.array([float(entry[4]) for entry in self.strategy.klines[coin]])
-                times = [int(entry[0]) for entry in self.strategy.klines[coin]]
-                times = np.array([datetime.fromtimestamp(time / 1000) for time in times])
+
+                data = self.strategy.data[coin]
 
                 sell_times:list = []
                 buy_times:list = []
@@ -86,6 +84,10 @@ class Backtest:
                 sell_times = np.array(sell_times)
                 buy_times = np.array(buy_times)
 
-                plt.plot(times, close_prices, buy_times, buy_prices, 'go', sell_times, sell_prices, 'ro')
+                if self.strategy.indicator == "RSI":
+                    plt.plot(data["close_time"], data["close"], data["close_time"], data["RSI"], buy_times, buy_prices, "go", sell_times, sell_prices, "ro")
+                elif self.strategy.indicator == "MACD":
+                    plt.plot(data["close_time"], data["close"], data["close_time"], data["MACD"], data["close_time"], data["MACD_signal"], buy_times, buy_prices, "go", sell_times, sell_prices, "ro")
+
                 plt.title(f"{coin}{self.strategy.baseCoin}")
                 plt.show()

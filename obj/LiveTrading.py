@@ -5,13 +5,15 @@ from binance.enums import ORDER_TYPE_LIMIT,SIDE_SELL,SIDE_BUY,TIME_IN_FORCE_GTC
 import time
 import math
 
+from obj.Data import Data
+
 
 class LiveTrading:
 
     def __init__(self, client:object, strategy:object, debug:bool, verbose:bool, klines:dict={}):
         self.client:object = client
         self.strategy:object = strategy
-        self.trades:list = []
+        self.trades:list = strategy.trades
         self.verbose:bool = verbose
         self.debug:bool = debug
 
@@ -52,11 +54,12 @@ class LiveTrading:
             sockets.append(f"{coin.lower()}{self.strategy.baseCoin.lower()}@kline_{self.strategy.interval}")
 
         self.kline_socket = self.bm.start_multiplex_socket(sockets, self.process_message)
+        self.print_with_timestamp("Going live...")
         self.bm.start()
 
     @staticmethod
     def print_with_timestamp(message):
-        print(f"\n{time.strftime('%H:%M:%S', time.localtime())} | {message}")
+        print(f"{time.strftime('%H:%M:%S', time.localtime())} | {message}")
 
     def process_message(self, msg):
         msg = msg["data"]
@@ -73,16 +76,16 @@ class LiveTrading:
         if kline['x']:
             self.message_no += 1
             trade_coin = f"{kline['s'][:len(kline['s']) - len(self.strategy.baseCoin)]}"
-            self.klines[trade_coin].append(self.kline_to_ohlcv(kline, self.verbose, self.debug))
+            self.klines[trade_coin].append(Data.process_socket_data(kline))
 
             if (self.verbose):
-                self.print_with_timestamp(f"Obtained closed kline and converted to ohlcv. Count for {kline['s']}: {len(self.klines[trade_coin])}")
+                self.print_with_timestamp(f"Interval closed for {kline['s']}: {len(self.klines[trade_coin])}")
 
             if (self.debug): print(self.klines)
 
             if self.message_no == len(self.strategy.tradeCoins):
                 self.message_no = 0
-                self.print_with_timestamp("Checking for any actions...")
+                self.print_with_timestamp("Got closed interval for all coins. Checking for any actions...")
                 self.strategy.refresh(self.klines)
 
                 # If the strategy is returning more trades than we have, there must be new ones
@@ -138,29 +141,3 @@ class LiveTrading:
     @staticmethod
     def round_down(n, decimals=0):
         return math.floor(n * (10 ** decimals)) / 10 ** decimals
-
-    @staticmethod
-    def kline_to_ohlcv(kline, verbose, debug):
-
-        # This converts the kline from the socket stream to the ohclv data
-        # so it is the same as the backtesting historical data returned from API
-        # which is what a Strategy accepts
-        ohlcv = [
-            kline['t'],  # Open time
-            kline['o'],  # Open
-            kline['h'],  # High
-            kline['l'],  # Low
-            kline['c'],  # Close
-            kline['v'],  # Volume
-            kline['T'],  # Close time
-            kline['q'],  # Quote asset volume
-            kline['n'],  # Number of trades
-            kline['V'],  # Taker buy base asset volume
-            kline['Q'],  # Taker buy quote asset volume
-            kline['B']  # Ignore
-        ]
-
-        if verbose: print("\nUnpacked closed kline to ohlcv")
-        if debug: print(ohlcv)
-
-        return ohlcv
