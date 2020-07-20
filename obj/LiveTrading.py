@@ -59,7 +59,7 @@ class LiveTrading:
 
     @staticmethod
     def print_with_timestamp(message):
-        print(f"{time.strftime('%H:%M:%S', time.localtime())} | {message}")
+        print(f"{time.strftime('%d/%m/%y %H:%M:%S', time.localtime())} | {message}")
 
     def process_message(self, msg):
         msg = msg["data"]
@@ -114,7 +114,7 @@ class LiveTrading:
             quantity=quantity,
             price=price
         )
-        print(order)
+        self.print_with_timestamp(order)
 
     def place_sell(self, coin, price):
         balance = self.get_balance(coin)
@@ -129,7 +129,7 @@ class LiveTrading:
                 quantity=quantity,
                 price=price
             )
-            print(order)
+            self.print_with_timestamp(order)
         else:
             print(f"Something went wrong. Bot is trying to sell 0 {coin}")
 

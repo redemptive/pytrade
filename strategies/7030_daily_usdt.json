@@ -1,1 +1,1 @@
-{"tradeCoins": ["XMR"], "baseCoin": "USDT", "interval": "1d", "indicator_name": "RSI", "strategy": "7030", "stop_loss": 3}
+{"tradeCoins": ["XMR", "LTC", "ETH", "XRP"], "baseCoin": "USDT", "interval": "1d", "indicator_name": "RSI", "strategy": "7030", "stop_loss": 3}
