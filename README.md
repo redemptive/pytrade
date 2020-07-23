@@ -12,10 +12,9 @@ I just let it run in the docker container on my raspberry pi with only small amo
 
 ### Docker Container
 
-By FAR the easiest way to run this is using a container.
+The easiest way to run this is using a container.
 
 I have included a dockerfile for this. Please use a linux host to run it.
-
 - `docker build . -t pytrade`
 
 Without API keys
@@ -27,20 +26,6 @@ With API keys
 ### Manually
 
 Instructions are for linux. You must have python > 3.5 installed to use this. As well as pip package manager.
-
-#### Installation of the TA Lib Dependancy
-
-- `wget http://prdownloads.sourceforge.net/ta-lib/ta-lib-0.4.0-src.tar.gz`
-- `tar -xzf ta-lib-0.4.0-src.tar.gz`
-- `cd ./ta-lib`
-- `./configure --prefix=/usr`
-- `make`
-- `make install`
-
-#### Installation of pytrade itself
-
-Clone the repository to wherever you would like to keep it and change into the pytrade folder.
-
 - `pip3 install --no-cache-dir -r requirements.txt`
 
 If you have an account then set the following env variables:

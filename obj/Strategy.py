@@ -1,9 +1,9 @@
 # Other imports
-import talib as ta
+import ta
 import numpy as np
-from datetime import datetime
 
 from obj.Trade import Trade
+from obj.Data import Data
 
 
 class Strategy:
@@ -14,135 +14,166 @@ class Strategy:
         self.tradeCoins:str = tradeCoins
         self.baseCoin:str = baseCoin
         self.interval:str = interval
-        self.klines:dict = klines
         self.stop_loss:str = stop_loss
-        self.time:dict = {}
         self.trades:list = []
-
-        self.highest_price:int = 0
-
-        self.indicator_result:dict = {}
-        self.strategy_result:dict = {}
-
+        self.data:dict = {}
         self.refresh(klines)
 
+    def filter_trades(self, trades):
+        # Takes the trades from all trade coins and makes sure there is only one trade at once
+        if trades:
+            active_trade = False
+            trades.sort(key=lambda x: x.time)
+            for trade in trades:
+                if not active_trade and trade.action == "BUY":
+                    active_trade = True
+                    self.trades.append(trade)
+                elif active_trade and trade.trade_coin == self.trades[-1].trade_coin and trade.action == "SELL":
+                    active_trade = False
+                    self.trades.append(trade)
+
     def refresh(self, klines):
-        self.klines = klines
+        trades = []
         for coin in self.tradeCoins:
-            self.indicator_result[coin] = self.calculate_indicator(coin)
+            self.data[coin] = Data.process_raw_historic_data(klines[coin])
+            self.calculate_indicator(coin)
+            new_trades = self.calculate_strategy(self.data[coin], coin)
+            if new_trades:
+                trades += new_trades
 
-        self.calculate_strategy()
-
-    def set_time(self):
-        open_time = {}
-        self.time = {}
-
-        for coin in self.tradeCoins:
-            open_time[coin] = [int(entry[0]) for entry in self.klines[coin]]
-            self.time[coin] = [datetime.fromtimestamp(time / 1000) for time in open_time[coin]]
+        self.filter_trades(trades)
 
     def calculate_indicator(self, coin):
-        if self.indicator == 'MACD':
-            close_array = np.asarray([float(entry[4]) for entry in self.klines[coin]])
-            macd, macdsignal, macdhist = ta.MACD(close_array, fastperiod=12, slowperiod=26, signalperiod=9)
-
-            return [macd, macdsignal, macdhist]
-
-        elif self.indicator == 'RSI':
-            # Perform the rsi calculation on the close prices and return it
-            return ta.RSI(np.asarray([float(entry[4]) for entry in self.klines[coin]]), timeperiod=14)
+        if self.indicator == "MACD":
+            macd = ta.trend.MACD(self.data[coin]["close"], n_fast=12, n_slow=26, n_sign=9)
+            self.data[coin]["MACD"] = macd.macd()
+            self.data[coin]["MACD_diff"] = macd.macd_diff()
+            self.data[coin]["MACD_signal"] = macd.macd_signal()
+        elif self.indicator == "RSI":
+            self.data[coin]["RSI"] = ta.momentum.RSIIndicator(close=self.data[coin]["close"], n=14).rsi()
+        elif self.indicator == "STOCH":
+            stoch = ta.momentum.StochasticOscillator(
+                high=self.data[coin]["high"], low=self.data[coin]["low"], close=self.data[coin]["close"])
+            self.data[coin]["STOCH"] = stoch.stoch()
+            self.data[coin]["STOCH_signal"] = stoch.stoch_signal()
+        elif self.indicator == "CLOUD":
+            cloud = ta.trend.IchimokuIndicator(high=self.data[coin]["high"], low=self.data[coin]["low"])
+            self.data[coin]["ichimoku_a"] = cloud.ichimoku_a()
+            self.data[coin]["ichimoku_b"] = cloud.ichimoku_b()
+            self.data[coin]["ichimoku_base_line"] = cloud.ichimoku_base_line()
+            self.data[coin]["ichimoku_conversion_line"] = cloud.ichimoku_conversion_line()
+            print(self.data[coin])
         else: return None
 
-    def calculate_strategy(self):
+    def calculate_strategy(self, df, coin):
         if self.indicator == 'MACD':
-
             if self.strategy == 'CROSS':
-                self.set_time()
-                self.trades = []
-                macdabove = False
-                # For each time in klines, go through each trade coin
-                for i in range(len(self.indicator_result[self.tradeCoins[-1]])):
-                    for coin in self.tradeCoins:
-                        if np.isnan(self.indicator_result[coin][0][i]) or np.isnan(self.indicator_result[coin][1][i]): pass
-                        # If both the MACD and signal are well defined, we compare the 2 and decide if a cross has occured
-                        else:
-                            if self.indicator_result[coin][0][i] > self.indicator_result[coin][1][i]:
-                                if (len(self.trades) == 0) or (self.trades[-1].action != "BUY"):
-                                    if not macdabove:
-                                        macdabove = True
-                                        self.trades.append(Trade(
-                                            time=self.time[coin][i],
-                                            base_coin=self.baseCoin,
-                                            trade_coin=coin,
-                                            action="BUY",
-                                            price=self.klines[coin][i][4]
-                                        ))
-                                elif self.check_stop_loss(self.klines[coin][i], coin):
-                                    macdabove = False
-
-                            elif (len(self.trades) > 0) and (self.trades[-1].trade_coin == coin):
-                                if macdabove:
-                                    macdabove = False
-                                    self.trades.append(Trade(
-                                        time=self.time[coin][i],
-                                        base_coin=self.baseCoin,
-                                        trade_coin=coin,
-                                        action="SELL",
-                                        price=self.klines[coin][i][4]
-                                    ))
+                trades = []
+                active_buy = False
+                for row in df.itertuples():
+                    if np.isnan(row.MACD) or np.isnan(row.MACD_signal): pass
+                    else:
+                        if row.MACD > row.MACD_signal and not active_buy:
+                            active_buy = True
+                            trades.append(Trade.new("BUY", self.baseCoin, coin, row))
+                        elif row.MACD < row.MACD_signal and active_buy:
+                            active_buy = False
+                            trades.append(Trade.new("SELL", self.baseCoin, coin, row))
+                        elif trades and self.check_stop_loss(trades[-1].price, row.close):
+                            trades.append(Trade.new("SELL", self.baseCoin, coin, row, "Stop loss"))
+                            active_buy = False
+                return trades
             else: return None
-        elif self.indicator == 'RSI':
-            if self.strategy == '7030': return self.calculate_rsi(70, 30)
-            elif self.strategy == '8020': return self.calculate_rsi(80, 20)
+        elif self.indicator == "CLOUD":
+            if self.strategy == "INORABOVE":
+                trades = []
+                active_buy = False
+                above_cloud = False
+                for row in df.itertuples():
+                    if np.isnan(row.ichimoku_a) or np.isnan(row.ichimoku_b): pass
+                    else:
+                        if (row.close > row.ichimoku_a or row.close > row.ichimoku_b) and not active_buy:
+                            active_buy = True
+                            trades.append(Trade.new("BUY", self.baseCoin, coin, row))
+                        elif (row.close < row.ichimoku_a or row.close < row.ichimoku_b) and active_buy and above_cloud:
+                            active_buy = False
+                            trades.append(Trade.new("SELL", self.baseCoin, coin, row))
+                        elif (row.close < row.ichimoku_a and row.close < row.ichimoku_b) and active_buy:
+                            active_buy = False
+                            trades.append(Trade.new("SELL", self.baseCoin, coin, row))
+                        elif trades and self.check_stop_loss(trades[-1].price, row.close):
+                            trades.append(Trade.new("SELL", self.baseCoin, coin, row, "Stop loss"))
+                            active_buy = False
+
+                        if (row.close > row.ichimoku_a and row.close > row.ichimoku_b):
+                            above_cloud = True
+                        else:
+                            above_cloud = False
+                return trades
+            elif self.strategy == "ABOVE":
+                trades = []
+                active_buy = False
+                for row in df.itertuples():
+                    if np.isnan(row.ichimoku_a) or np.isnan(row.ichimoku_b): pass
+                    else:
+                        if (row.close > row.ichimoku_a and row.close > row.ichimoku_b) and not active_buy:
+                            active_buy = True
+                            trades.append(Trade.new("BUY", self.baseCoin, coin, row))
+                        elif not (row.close > row.ichimoku_a and row.close > row.ichimoku_b) and active_buy:
+                            active_buy = False
+                            trades.append(Trade.new("SELL", self.baseCoin, coin, row))
+                return trades
+        elif self.indicator == "STOCH":
+            if self.strategy == "8020":
+                trades = []
+                active_buy = False
+                above_high = False
+                below_low = False
+                for row in df.itertuples():
+                    if np.isnan(row.STOCH_signal): pass
+                    else:
+                        if row.STOCH_signal < 20 and not below_low:
+                            below_low = True
+                        elif row.STOCH_signal > 80 and not above_high:
+                            above_high = True
+                        elif row.STOCH_signal > 20 and below_low:
+                            below_low = False
+                            if not active_buy:
+                                active_buy = True
+                                trades.append(Trade.new("BUY", self.baseCoin, coin, row))
+                        elif row.STOCH_signal < 80 and above_high:
+                            above_high = False
+                            if active_buy:
+                                active_buy = False
+                                trades.append(Trade.new("SELL", self.baseCoin, coin, row))
+                        elif trades and self.check_stop_loss(trades[-1].price, row.close):
+                            trades.append(Trade.new("SELL", self.baseCoin, coin, row, "Stop loss"))
+                            active_buy = False
+                return trades
+        elif self.indicator == "RSI":
+            if self.strategy == "7030": return self.calculate_rsi(70, 30, df, coin)
+            elif self.strategy == "8020": return self.calculate_rsi(80, 20, df, coin)
         else: return None
 
-    def calculate_rsi(self, high, low):
-
-        self.set_time()
-        self.trades = []
+    def calculate_rsi(self, high, low, df, coin):
+        trades = []
         active_buy = False
         # Runs through each timestamp in order
-        for i in range(len(self.indicator_result[self.tradeCoins[-1]])):
-            for coin in self.tradeCoins:
-                if np.isnan(self.indicator_result[coin][i]): pass
-                # If the RSI is well defined, check if over high value or under low
-                else:
-                    if float(self.indicator_result[coin][i]) < low and not active_buy:
-                        if (len(self.trades) == 0) or (self.trades[-1].action != "BUY"):
-                            # Appends the timestamp, RSI value at the timestamp, color of dot, buy signal, and the buy price
-                            self.trades.append(Trade(
-                                time=self.time[coin][i],
-                                base_coin=self.baseCoin,
-                                trade_coin=coin,
-                                action="BUY",
-                                price=self.klines[coin][i][4]
-                            ))
-                            active_buy = True
-                    elif float(self.indicator_result[coin][i]) > high and active_buy:
-                        if (len(self.trades) > 0) and (self.trades[-1].trade_coin == coin):
-                            # Appends the timestamp, RSI value at the timestamp, color of dot, sell signal, and the sell price
-                            self.trades.append(Trade(
-                                time=self.time[coin][i],
-                                base_coin=self.baseCoin,
-                                trade_coin=coin,
-                                action="SELL",
-                                price=self.klines[coin][i][4]
-                            ))
-                            active_buy = False
-                    elif (self.check_stop_loss(self.klines[coin][i], coin)):
-                        active_buy = False
+        for row in df.itertuples():
+            if np.isnan(row.RSI): pass
+            else:
+                if row.RSI < low and not active_buy:
+                    trades.append(Trade.new("BUY", self.baseCoin, coin, row))
+                    active_buy = True
+                elif row.RSI > high and active_buy:
+                    trades.append(Trade.new("SELL", self.baseCoin, coin, row))
+                    active_buy = False
+                elif trades and self.check_stop_loss(trades[-1].price, row.close):
+                    trades.append(Trade.new("SELL", self.baseCoin, coin, row, "Stop loss"))
+                    active_buy = False
+        return trades
 
-    def check_stop_loss(self, current_kline, coin):
-        if (len(self.trades) > 0) and (self.trades[-1].action == "BUY") and (self.trades[-1].trade_coin == coin):
-            if float(self.highest_price) < float(current_kline[4]):
-                self.highest_price = current_kline[4]
-            if ((float(current_kline[4]) / float(self.highest_price)) * 100) < (100 - self.stop_loss):
-                self.trades.append(Trade(
-                    time=datetime.fromtimestamp(current_kline[0] / 1000),
-                    base_coin=self.baseCoin,
-                    trade_coin=coin,
-                    action="SELL",
-                    price=current_kline[4]
-                ))
-                return True
-        return False
+    def check_stop_loss(self, bought_price, current_price):
+        sl_price = (bought_price - (bought_price * (self.stop_loss / 100)))
+        if current_price < sl_price: return True
+        else: return False

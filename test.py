@@ -8,14 +8,17 @@ import os
 
 from pytrade import Pytrade
 from obj.LiveTrading import LiveTrading
+from obj.Data import Data
 
-class TestLiveTrading(unittest.TestCase):
+class TestData(unittest.TestCase):
 
-    def test_kline_to_ohclv(self):
+    def test_process_socket_data(self):
         test_kline = {'t': 1583052840000, 'T': 1583052899999, 's': 'ETHBTC', 'i': '1m', 'f': 165732234, 'L': 165732317, 'o': '0.02582100', 'c': '0.02582000', 'h': '0.02582800', 'l': '0.02580400', 'v': '89.60700000', 'n': 84, 'x': True, 'q': '2.31295358', 'V': '48.32900000', 'Q': '1.24753766', 'B': '0'}
         expected_result = [1583052840000, '0.02582100', '0.02582800', '0.02580400', '0.02582000', '89.60700000', 1583052899999, '2.31295358', 84, '48.32900000', '1.24753766', '0']
-        result = LiveTrading.kline_to_ohlcv(test_kline, False, False)
+        result = Data.process_socket_data(test_kline)
         self.assertEqual(result, expected_result)
+
+class TestLiveTrading(unittest.TestCase):
 
     def test_round_down(self):
         self.assertEqual(LiveTrading.round_down(3.8, 0), 3)
@@ -27,7 +30,7 @@ class TestDataSubcommand(unittest.TestCase):
         pytrade = Pytrade(["data"])
     
     def test_custom_command(self):
-        pytrade = Pytrade(["data", "--symbol", "XRPBNB", "--time", "1 day ago", "--interval", "1m"])
+        pytrade = Pytrade(["data", "--symbol", "XRPBNB", "--time", "1 day ago", "--interval", "1h"])
 
 
 class TestStrategySubcommand(unittest.TestCase):
@@ -73,10 +76,13 @@ class TestStrategySubcommand(unittest.TestCase):
 
 class TestBacktest(unittest.TestCase):
 
-    def test_all_strategy_backtest(self):
+    def test_default_strategy_backtest(self):
         pytrade = Pytrade(["strategy", "--new", "--name", "test_def_backtest"])
         pytrade = Pytrade(["backtest", "--strategies", "test_def_backtest"])
         os.remove("strategies/test_def_backtest.json")
+
+    def test_all_strategy_backtest(self):
+        pytrade = Pytrade(["backtest"])
 
     def test_multiple_tradecoins_rsi_8020(self):
         pytrade = Pytrade([
@@ -89,7 +95,7 @@ class TestBacktest(unittest.TestCase):
             '--strategy', '8020',
             '--stopLoss', '3'
         ])
-        pytrade = Pytrade(["backtest", "--strategies", "test_backtest_rsi_8020_multi", "--time", "1 month ago"])
+        pytrade = Pytrade(["backtest", "--strategies", "test_backtest_rsi_8020_multi", "--time", "6 months ago"])
         os.remove("strategies/test_backtest_rsi_8020_multi.json")
 
     def test_single_tradecoin_rsi_7030(self):
@@ -103,7 +109,7 @@ class TestBacktest(unittest.TestCase):
             '--strategy', '7020',
             '--stopLoss', '3'
         ])
-        pytrade = Pytrade(["backtest", "--strategies", "test_backtest_rsi_7030_single", "--time", "1 month ago"])
+        pytrade = Pytrade(["backtest", "--strategies", "test_backtest_rsi_7030_single", "--time", "6 months ago"])
         os.remove("strategies/test_backtest_rsi_7030_single.json")
 
     def test_multiple_tradecoins_rsi_7030(self):
@@ -117,7 +123,7 @@ class TestBacktest(unittest.TestCase):
             '--strategy', '7020',
             '--stopLoss', '3'
         ])
-        pytrade = Pytrade(["backtest", "--strategies", "test_backtest_rsi_7030_multi", "--time", "1 month ago"])
+        pytrade = Pytrade(["backtest", "--strategies", "test_backtest_rsi_7030_multi", "--time", "6 months ago"])
         os.remove("strategies/test_backtest_rsi_7030_multi.json")
 
     def test_single_tradecoin_macd_cross(self):
@@ -131,7 +137,7 @@ class TestBacktest(unittest.TestCase):
             '--strategy', 'CROSS',
             '--stopLoss', '3'
         ])
-        pytrade = Pytrade(["backtest", "--strategies", "test_backtest_macd_cross_single", "--time", "1 month ago"])
+        pytrade = Pytrade(["backtest", "--strategies", "test_backtest_macd_cross_single", "--time", "6 months ago"])
         os.remove("strategies/test_backtest_macd_cross_single.json")
 
     def test_multiple_tradecoin_macd_cross(self):
@@ -145,7 +151,7 @@ class TestBacktest(unittest.TestCase):
             '--strategy', 'CROSS',
             '--stopLoss', '3'
         ])
-        pytrade = Pytrade(["backtest", "--strategies", "test_backtest_macd_cross_multi", "--time", "1 month ago"])
+        pytrade = Pytrade(["backtest", "--strategies", "test_backtest_macd_cross_multi", "--time", "6 months ago"])
         os.remove("strategies/test_backtest_macd_cross_multi.json")
 
 if __name__ == '__main__':

@@ -1,0 +1,1 @@
+{"tradeCoins": ["XMR", "LTC", "ETH", "XRP"], "baseCoin": "BTC", "interval": "1d", "indicator_name": "STOCH", "strategy": "8020", "stop_loss": 2}

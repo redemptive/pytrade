@@ -1,0 +1,1 @@
+{"tradeCoins": ["LTC", "ETH", "XRP"], "baseCoin": "BTC", "interval": "1d", "indicator_name": "MACD", "strategy": "CROSS", "stop_loss": 3}
