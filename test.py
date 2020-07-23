@@ -76,10 +76,13 @@ class TestStrategySubcommand(unittest.TestCase):
 
 class TestBacktest(unittest.TestCase):
 
-    def test_all_strategy_backtest(self):
+    def test_default_strategy_backtest(self):
         pytrade = Pytrade(["strategy", "--new", "--name", "test_def_backtest"])
         pytrade = Pytrade(["backtest", "--strategies", "test_def_backtest"])
         os.remove("strategies/test_def_backtest.json")
+
+    def test_all_strategy_backtest(self):
+        pytrade = Pytrade(["backtest"])
 
     def test_multiple_tradecoins_rsi_8020(self):
         pytrade = Pytrade([
