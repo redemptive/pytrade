@@ -1,9 +1,32 @@
 # Other imports
+import numpy as np
 import pandas as pd
+
 from datetime import datetime
 
 
 class Data:
+
+    @staticmethod
+    def prep_ml_data(dataset, target, start_index, end_index, history_size,
+                      target_size, step, single_step=False):
+        data = []
+        labels = []
+
+        start_index = start_index + history_size
+        if end_index is None:
+            end_index = len(dataset) - target_size
+
+        for i in range(start_index, end_index):
+            indices = range(i-history_size, i, step)
+            data.append(dataset[indices])
+
+            if single_step:
+                labels.append(target[i+target_size])
+            else:
+                labels.append(target[i:i+target_size])
+
+        return np.array(data), np.array(labels)
 
     @staticmethod
     def process_socket_data(message):
@@ -60,6 +83,7 @@ class Data:
         data["high"] = data["high"].astype("float")
         data["low"] = data["low"].astype("float")
         data["close"] = data["close"].astype("float")
+        data["volume"] = data["volume"].astype("float")
 
         return data
 

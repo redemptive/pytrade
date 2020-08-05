@@ -10,11 +10,15 @@ from datetime import datetime
 from binance.client import Client
 import matplotlib.pyplot as plt
 import numpy as np
+import tensorflow as tf
+import ta
 
 # Custom objects
 from obj.Strategy import Strategy
 from obj.Backtest import Backtest
 from obj.LiveTrading import LiveTrading
+from obj.Data import Data
+from obj.MLEngine import MLEngine
 
 
 class Pytrade():
@@ -52,6 +56,21 @@ class Pytrade():
         else:
             print("No option selected")
 
+    def mlstrategy(self, args:list=[]):
+        self.binance_login()
+
+        klines = self.client.get_historical_klines(symbol="ETHUSDT", interval="1d", start_str="2 years ago")
+
+        df = Data.process_raw_historic_data(klines)
+
+        df["RSI"] = ta.momentum.RSIIndicator(close=df["close"], n=14).rsi()
+
+        df = df.dropna(axis=0)
+
+        features = ['close', 'low', 'high', 'volume', "RSI"]
+
+        model = MLEngine.build(df, features, "close_time")
+
     def get_args(self, args:list=[]):
         parser = argparse.ArgumentParser(description="This is PYTRADE")
 
@@ -78,6 +97,10 @@ class Pytrade():
         parser_backtest.add_argument("-s", "--strategies", default="all", type=str, help="A comma separated list of strategies to test. Defaults to 'all' which will test them all")
         parser_backtest.add_argument("-g", "--graph", action="store_true", help="Graph the backtest")
         parser_backtest.set_defaults(func=self.run_backtest)
+
+        # ML Strategy command
+        parser_mlstrategy = subparsers.add_parser("mlstrategy", help="Test feature for machine learning strategies")
+        parser_mlstrategy.set_defaults(func=self.mlstrategy)
 
         # live command
         parser_live = subparsers.add_parser("live", help="Live trading with strategies")

@@ -91,7 +91,7 @@ class Backtest:
                 elif self.strategy.indicator == "STOCH":
                     plt.plot(data["close_time"], data["close"], data["close_time"], data["STOCH"], data["close_time"], data["STOCH_signal"], buy_times, buy_prices, "go", sell_times, sell_prices, "ro")
                 elif self.strategy.indicator == "CLOUD":
-                    plt.plot(data["close_time"], data["close"], data["close_time"], data["ichimoku_a"], data["close_time"], data["ichimoku_b"], buy_times, buy_prices, "go", sell_times, sell_prices, "ro")
+                    plt.plot(data["close_time"], data["close"], data["close_time"], data["ichimoku_a"], data["close_time"], data["ichimoku_b"], data["close_time"], data["ichimoku_base_line"], data["close_time"], data["ichimoku_conversion_line"], buy_times, buy_prices, "go", sell_times, sell_prices, "ro")
 
                 plt.title(f"{coin}{self.strategy.baseCoin}")
                 plt.show()

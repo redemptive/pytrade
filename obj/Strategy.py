@@ -92,7 +92,7 @@ class Strategy:
                 for row in df.itertuples():
                     if np.isnan(row.ichimoku_a) or np.isnan(row.ichimoku_b): pass
                     else:
-                        if (row.close > row.ichimoku_a or row.close > row.ichimoku_b) and not active_buy:
+                        if (row.close > row.ichimoku_a or row.close > row.ichimoku_b) and row.close > row.ichimoku_conversion_line and not active_buy:
                             active_buy = True
                             trades.append(Trade.new("BUY", self.baseCoin, coin, row))
                         elif (row.close < row.ichimoku_a or row.close < row.ichimoku_b) and active_buy and above_cloud:
