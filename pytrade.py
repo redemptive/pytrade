@@ -126,7 +126,7 @@ class Pytrade():
         self.binance_login()
         strategy_data = Pytrade.load_strategy(args.strategy)
         klines = self.get_multi_coin_klines(strategy_data)
-        LiveTrading(self.client, Strategy(klines, **strategy_data), self.args.debug, self.args.verbose)
+        LiveTrading(self.client, Strategy(klines, **strategy_data), self.args.debug, self.args.verbose, klines)
 
     @staticmethod
     def load_strategy(name):

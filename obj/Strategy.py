@@ -62,7 +62,6 @@ class Strategy:
             self.data[coin]["ichimoku_b"] = cloud.ichimoku_b()
             self.data[coin]["ichimoku_base_line"] = cloud.ichimoku_base_line()
             self.data[coin]["ichimoku_conversion_line"] = cloud.ichimoku_conversion_line()
-            print(self.data[coin])
         else: return None
 
     def calculate_strategy(self, df, coin):
