@@ -37,9 +37,7 @@ class Strategy:
         for coin in self.tradeCoins:
             self.data[coin] = Data.process_raw_historic_data(klines[coin])
             self.calculate_indicator(coin)
-            new_trades = self.calculate_strategy(self.data[coin], coin)
-            if new_trades:
-                trades += new_trades
+            trades += self.calculate_strategy(self.data[coin], coin)
 
         self.filter_trades(trades)
 
