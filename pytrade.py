@@ -10,7 +10,6 @@ from datetime import datetime
 from binance.client import Client
 import matplotlib.pyplot as plt
 import numpy as np
-import tensorflow as tf
 import ta
 
 # Custom objects
@@ -69,7 +68,7 @@ class Pytrade():
 
         features = ['close', 'low', 'high', 'volume']
 
-        model = MLEngine.build(df, features, "close_time")
+        MLEngine.build(df, features, "close_time", args.graph)
 
     def get_args(self, args:list=[]):
         parser = argparse.ArgumentParser(description="This is PYTRADE")
@@ -100,6 +99,7 @@ class Pytrade():
 
         # ML Strategy command
         parser_mlstrategy = subparsers.add_parser("mlstrategy", help="Test feature for machine learning strategies")
+        parser_mlstrategy.add_argument("-g", "--graph", help="Graph the predictions against actual")
         parser_mlstrategy.set_defaults(func=self.mlstrategy)
 
         # live command

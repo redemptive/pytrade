@@ -10,6 +10,11 @@ from pytrade import Pytrade
 from obj.LiveTrading import LiveTrading
 from obj.Data import Data
 
+class TestMachineLearning(unittest.TestCase):
+
+    def test_new_model(self):
+        pytrade = Pytrade(["mlstrategy"])
+
 class TestData(unittest.TestCase):
 
     def test_process_socket_data(self):
@@ -106,7 +111,7 @@ class TestBacktest(unittest.TestCase):
             '--baseCoin', 'USDT',
             '--interval', '1d',
             '--indicator', 'RSI',
-            '--strategy', '7020',
+            '--strategy', '7030',
             '--stopLoss', '3'
         ])
         pytrade = Pytrade(["backtest", "--strategies", "test_backtest_rsi_7030_single", "--time", "6 months ago"])
@@ -120,7 +125,7 @@ class TestBacktest(unittest.TestCase):
             '--baseCoin', 'USDT',
             '--interval', '1d',
             '--indicator', 'RSI',
-            '--strategy', '7020',
+            '--strategy', '7030',
             '--stopLoss', '3'
         ])
         pytrade = Pytrade(["backtest", "--strategies", "test_backtest_rsi_7030_multi", "--time", "6 months ago"])

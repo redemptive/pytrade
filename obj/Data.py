@@ -1,12 +1,10 @@
 # Other imports
-import numpy as np
 import pandas as pd
 
 from datetime import datetime
 
 
 class Data:
-
 
     @staticmethod
     def process_socket_data(message):

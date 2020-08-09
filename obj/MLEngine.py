@@ -1,6 +1,4 @@
 import os
-os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
-
 import tensorflow as tf
 from sklearn.preprocessing import MinMaxScaler
 import matplotlib.pyplot as plt
@@ -14,7 +12,8 @@ class MLEngine:
         self.details:dict = details
 
     @staticmethod
-    def build(df, features, index, name:str="test"):
+    def build(df, features, index, graph, name:str="test"):
+        os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
         features = df[features]
         features.index = df[index]
 
@@ -23,7 +22,8 @@ class MLEngine:
         BUFFER_SIZE = 10000
 
         scaler = MinMaxScaler()
-        features_minmax = scaler.fit(features)
+        # features_minmax = scaler.fit(features)
+        scaler.fit(features)
         dataset = scaler.transform(features)
 
         future_target = 1
@@ -36,11 +36,11 @@ class MLEngine:
 
         for i in range(history_size, len(dataset) - TRAIN_SPLIT):
             data_train.append(dataset[i, 0])
-            labels_train.append(dataset[i-history_size:i, :])
+            labels_train.append(dataset[i - history_size:i, :])
 
         for i in range(len(dataset) - TRAIN_SPLIT, len(dataset)):
             data_val.append(dataset[i, 0])
-            labels_val.append(dataset[i-history_size:i, :])
+            labels_val.append(dataset[i - history_size:i, :])
 
         data_train = np.array(data_train)
         labels_train = np.array(labels_train)
@@ -71,46 +71,22 @@ class MLEngine:
         model.compile(optimizer=tf.keras.optimizers.RMSprop(clipvalue=1.0), loss='mae')
 
         EVALUATION_INTERVAL = 1000
-        EPOCHS = 10
+        EPOCHS = 1
 
         print(labels_val)
         print(data_val)
 
-        history = model.fit(train_data, epochs=EPOCHS,
-                                          steps_per_epoch=EVALUATION_INTERVAL,
-                                          validation_data=val_data,
-                                          validation_steps=50)
-        plt.plot(model.predict(labels_val))
-        plt.plot(data_val)
-        plt.show()
-        #for i in range(len(data_val)):
-            #print(f"Real: {data_val[i]} Predicted: {model.predict(labels_val)[i]}")
+        # history =
+        model.fit(train_data, epochs=EPOCHS, steps_per_epoch=EVALUATION_INTERVAL, validation_data=val_data, validation_steps=50)
+
+        if graph:
+            plt.plot(model.predict(labels_val))
+            plt.plot(data_val)
+            plt.show()
 
         model.save(f"./ml_strategies/{name}")
 
         return model
-
-    @staticmethod
-    def prep_ml_data(dataset, target, start_index, end_index, history_size,
-                      target_size, step, single_step=False):
-        data = []
-        labels = []
-
-        start_index = start_index + history_size
-        if end_index is None:
-            end_index = len(dataset) - target_size
-
-        for i in range(start_index, end_index):
-            indices = range(i-history_size, i, step)
-            data.append(dataset[indices])
-
-            if single_step:
-                labels.append(target[i+target_size])
-            else:
-                labels.append(target[i:i+target_size])
-
-        return np.array(data), np.array(labels)
-
 
     @staticmethod
     def multi_step_plot(history, true_future, prediction):
@@ -119,11 +95,9 @@ class MLEngine:
         num_out = len(true_future)
 
         plt.plot(num_in, np.array(history[:, 1]), label='History')
-        plt.plot(np.arange(num_out)/1, np.array(true_future), 'ro',
-                label='True Future')
+        plt.plot(np.arange(num_out) / 1, np.array(true_future), 'ro', label='True Future')
         if prediction.any():
-            plt.plot(np.arange(num_out)/1, np.array(prediction), 'go',
-                    label='Predicted Future')
+            plt.plot(np.arange(num_out) / 1, np.array(prediction), 'go', label='Predicted Future')
         plt.legend(loc='upper left')
         plt.show()
 
