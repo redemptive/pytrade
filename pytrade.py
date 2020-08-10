@@ -56,19 +56,20 @@ class Pytrade():
             print("No option selected")
 
     def mlstrategy(self, args:list=[]):
-        self.binance_login()
+        if args.new:
+            self.binance_login()
 
-        klines = self.client.get_historical_klines(symbol="ETHUSDT", interval="1d", start_str="3 years ago")
+            klines = self.client.get_historical_klines(symbol="ETHUSDT", interval="1d", start_str="3 years ago")
 
-        df = Data.process_raw_historic_data(klines)
+            df = Data.process_raw_historic_data(klines)
 
-        df["RSI"] = ta.momentum.RSIIndicator(close=df["close"], n=14).rsi()
+            df["RSI"] = ta.momentum.RSIIndicator(close=df["close"], n=14).rsi()
 
-        df = df.dropna(axis=0)
+            df = df.dropna(axis=0)
 
-        features = ['close', 'low', 'high', 'volume']
+            features = ['close', 'low', 'high', 'volume']
 
-        MLEngine.build(df, features, "close_time", args.graph)
+            MLEngine.build(df, features, "close_time", args.epochs, args.graph)
 
     def get_args(self, args:list=[]):
         parser = argparse.ArgumentParser(description="This is PYTRADE")
@@ -99,7 +100,9 @@ class Pytrade():
 
         # ML Strategy command
         parser_mlstrategy = subparsers.add_parser("mlstrategy", help="Test feature for machine learning strategies")
-        parser_mlstrategy.add_argument("-g", "--graph", help="Graph the predictions against actual")
+        parser_mlstrategy.add_argument("-n", "--new", action="store_true", help="Create a new machine learning model")
+        parser_mlstrategy.add_argument("-g", "--graph", action="store_true", help="Graph the predictions against actual")
+        parser_mlstrategy.add_argument("-e", "--epochs", default=20, type=int, help="Graph the predictions against actual")
         parser_mlstrategy.set_defaults(func=self.mlstrategy)
 
         # live command

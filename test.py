@@ -13,7 +13,7 @@ from obj.Data import Data
 class TestMachineLearning(unittest.TestCase):
 
     def test_new_model(self):
-        pytrade = Pytrade(["mlstrategy"])
+        pytrade = Pytrade(["mlstrategy", "--new", "--epochs", "1"])
 
 class TestData(unittest.TestCase):
 

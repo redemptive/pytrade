@@ -1,6 +1,7 @@
 import os
 import tensorflow as tf
 from sklearn.preprocessing import MinMaxScaler
+# from sklearn.externals import joblib
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -12,7 +13,7 @@ class MLEngine:
         self.details:dict = details
 
     @staticmethod
-    def build(df, features, index, graph, name:str="test"):
+    def build(df, features, index, epochs, graph, name:str="test"):
         os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
         features = df[features]
         features.index = df[index]
@@ -71,22 +72,26 @@ class MLEngine:
         model.compile(optimizer=tf.keras.optimizers.RMSprop(clipvalue=1.0), loss='mae')
 
         EVALUATION_INTERVAL = 1000
-        EPOCHS = 1
 
-        print(labels_val)
-        print(data_val)
+        # print(labels_val)
+        # print(data_val)
 
         # history =
-        model.fit(train_data, epochs=EPOCHS, steps_per_epoch=EVALUATION_INTERVAL, validation_data=val_data, validation_steps=50)
+        model.fit(train_data, epochs=epochs, steps_per_epoch=EVALUATION_INTERVAL, validation_data=val_data, validation_steps=50)
 
         if graph:
             plt.plot(model.predict(labels_val))
             plt.plot(data_val)
             plt.show()
 
-        model.save(f"./ml_strategies/{name}")
+        MLEngine.save_model(name, model, scaler)
 
         return model
+
+    @staticmethod
+    def save_model(name, model, scaler):
+        model.save(f"./ml_strategies/{name}")
+        # joblib.dump(scaler, f"./ml_strategies/{name}/{name}.scaler")
 
     @staticmethod
     def multi_step_plot(history, true_future, prediction):
