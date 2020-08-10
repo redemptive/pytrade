@@ -13,6 +13,16 @@ class MLEngine:
         self.details:dict = details
 
     @staticmethod
+    def prep_data(dataset, start, end, history_size):
+        data = []
+        labels = []
+        for i in range(start, end):
+            data.append(dataset[i, 0])
+            labels.append(dataset[i - history_size:i, :])
+
+        return np.array(data), np.array(labels)
+
+    @staticmethod
     def build(df, features, index, epochs, graph, name:str="test"):
         os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
         features = df[features]
@@ -30,24 +40,8 @@ class MLEngine:
         future_target = 1
         history_size = 7
 
-        data_train = []
-        labels_train = []
-        data_val = []
-        labels_val = []
-
-        for i in range(history_size, len(dataset) - TRAIN_SPLIT):
-            data_train.append(dataset[i, 0])
-            labels_train.append(dataset[i - history_size:i, :])
-
-        for i in range(len(dataset) - TRAIN_SPLIT, len(dataset)):
-            data_val.append(dataset[i, 0])
-            labels_val.append(dataset[i - history_size:i, :])
-
-        data_train = np.array(data_train)
-        labels_train = np.array(labels_train)
-
-        data_val = np.array(data_val)
-        labels_val = np.array(labels_val)
+        data_train, labels_train = MLEngine.prep_data(dataset, history_size, len(dataset) - TRAIN_SPLIT, history_size)
+        data_val, labels_val = MLEngine.prep_data(dataset, len(dataset) - TRAIN_SPLIT, len(dataset), history_size)
 
         train_data = tf.data.Dataset.from_tensor_slices((labels_train, data_train))
         train_data = train_data.cache().shuffle(BUFFER_SIZE).batch(BATCH_SIZE).repeat()
@@ -92,19 +86,6 @@ class MLEngine:
     def save_model(name, model, scaler):
         model.save(f"./ml_strategies/{name}")
         # joblib.dump(scaler, f"./ml_strategies/{name}/{name}.scaler")
-
-    @staticmethod
-    def multi_step_plot(history, true_future, prediction):
-        plt.figure(figsize=(12, 6))
-        num_in = MLEngine.create_time_steps(len(history))
-        num_out = len(true_future)
-
-        plt.plot(num_in, np.array(history[:, 1]), label='History')
-        plt.plot(np.arange(num_out) / 1, np.array(true_future), 'ro', label='True Future')
-        if prediction.any():
-            plt.plot(np.arange(num_out) / 1, np.array(prediction), 'go', label='Predicted Future')
-        plt.legend(loc='upper left')
-        plt.show()
 
     @staticmethod
     def create_time_steps(length):
