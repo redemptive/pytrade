@@ -1,16 +1,20 @@
 import os
+import json
 import tensorflow as tf
 from sklearn.preprocessing import MinMaxScaler
 # from sklearn.externals import joblib
 import matplotlib.pyplot as plt
 import numpy as np
+from joblib import dump, load
 
 
 class MLEngine:
 
-    def __init__(self, model:object, details:dict):
-        self.model:object = model
-        self.details:dict = details
+    def __init__(self, model_name:str):
+        data = MLEngine.load_model(model_name)
+        self.model:object = data["model"]
+        self.scaler = data["scaler"]
+        self.details = data["details"]
 
     @staticmethod
     def prep_data(dataset, start, end, history_size):
@@ -23,18 +27,17 @@ class MLEngine:
         return np.array(data), np.array(labels)
 
     @staticmethod
-    def build(df, features, index, epochs, graph, name:str="test"):
+    def build(df, feature_names, index, epochs, graph, name:str="test"):
         os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
-        features = df[features]
+        features = df[feature_names]
         features.index = df[index]
 
         TRAIN_SPLIT = int(len(df) / 3)
-        BATCH_SIZE = 7
+        BATCH_SIZE = 1
         BUFFER_SIZE = 10000
 
         scaler = MinMaxScaler()
-        # features_minmax = scaler.fit(features)
-        scaler.fit(features)
+        features_minmax = scaler.fit(features)
         dataset = scaler.transform(features)
 
         future_target = 1
@@ -78,14 +81,33 @@ class MLEngine:
             plt.plot(data_val)
             plt.show()
 
-        MLEngine.save_model(name, model, scaler)
+        details = {
+            "epochs": epochs,
+            "features": feature_names
+        }
 
-        return model
+        MLEngine.save_model(name, model, features_minmax, details)
+
+        return MLEngine(name)
 
     @staticmethod
-    def save_model(name, model, scaler):
+    def load_model(name):
+        with open(f"./ml_strategies/{name}/details.json") as raw:
+            details = json.load(raw)
+
+        return {
+            "model": tf.keras.models.load_model(f"./ml_strategies/{name}"),
+            "scaler": load(f"./ml_strategies/{name}/scaler.pkl"),
+            "details": details
+        }
+
+    @staticmethod
+    def save_model(name, model, scaler, details):
         model.save(f"./ml_strategies/{name}")
-        # joblib.dump(scaler, f"./ml_strategies/{name}/{name}.scaler")
+        dump(scaler, f"./ml_strategies/{name}/scaler.pkl")
+
+        with open(f"./ml_strategies/{name}/details.json", "w") as outfile:
+            json.dump(details, outfile)
 
     @staticmethod
     def create_time_steps(length):

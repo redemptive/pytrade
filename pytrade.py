@@ -59,7 +59,7 @@ class Pytrade():
         if args.new:
             self.binance_login()
 
-            klines = self.client.get_historical_klines(symbol="ETHUSDT", interval="1d", start_str="3 years ago")
+            klines = self.client.get_historical_klines(symbol="BTCUSDT", interval="1h", start_str="1 years ago")
 
             df = Data.process_raw_historic_data(klines)
 
@@ -67,7 +67,7 @@ class Pytrade():
 
             df = df.dropna(axis=0)
 
-            features = ['close', 'low', 'high', 'volume']
+            features = ["close", "low", "high", "volume", "no_trades"]
 
             MLEngine.build(df, features, "close_time", args.epochs, args.graph)
 

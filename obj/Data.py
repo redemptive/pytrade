@@ -46,7 +46,6 @@ class Data:
         # Don't need the following columns
         data = data.drop(columns=[
             "quote_asset_volume",
-            "no_trades",
             "taker_buy_base_asset_volume",
             "taker_buy_quote_asset_volume",
             "ignore"
@@ -62,6 +61,8 @@ class Data:
         data["low"] = data["low"].astype("float")
         data["close"] = data["close"].astype("float")
         data["volume"] = data["volume"].astype("float")
+
+        data["no_trades"] = data["no_trades"].astype("int")
 
         return data
 
