@@ -18,9 +18,7 @@ class MLEngine:
 
     def predict(self, df):
         dataset = self.scaler.transform(MLEngine.process_dataframe(df, "close_time", self.details["features"]))
-        print(dataset)
         data, labels = MLEngine.prep_data(dataset, self.details["history_size"], len(dataset), self.details["history_size"])
-        print(labels)
         return self.scaler.inverse_transform(self.model.predict(labels))
 
     @staticmethod
@@ -82,9 +80,6 @@ class MLEngine:
         EVALUATION_INTERVAL = 1000
 
         history = model.fit(train_data, epochs=epochs, steps_per_epoch=EVALUATION_INTERVAL, validation_data=val_data, validation_steps=50)
-
-        print(scaler.inverse_transform(model.predict(labels_val)))
-        print(scaler.inverse_transform(data_val))
 
         if graph:
             plt.plot(scaler.inverse_transform(model.predict(labels_val))[:, 0])
