@@ -4,6 +4,7 @@ import numpy as np
 
 from obj.Trade import Trade
 from obj.Data import Data
+from obj.MLEngine import MLEngine
 
 
 class Strategy:
@@ -60,7 +61,8 @@ class Strategy:
             self.data[coin]["ichimoku_b"] = cloud.ichimoku_b()
             self.data[coin]["ichimoku_base_line"] = cloud.ichimoku_base_line()
             self.data[coin]["ichimoku_conversion_line"] = cloud.ichimoku_conversion_line()
-            print(self.data[coin])
+        elif self.indicator == "ML":
+            self.model = MLEngine("test")
         else: return None
 
     def calculate_strategy(self, df, coin):
@@ -151,7 +153,26 @@ class Strategy:
         elif self.indicator == "RSI":
             if self.strategy == "7030": return self.calculate_rsi(70, 30, df, coin)
             elif self.strategy == "8020": return self.calculate_rsi(80, 20, df, coin)
+        elif self.indicator == "ML":
+            return self.calculate_ml(df, coin)
         else: return None
+
+    def calculate_ml(self, df, coin):
+        active_buy = False
+        predictions = self.model.predict(df)
+        trades = []
+        for row in df.itertuples(index=True):
+            if row.Index < len(predictions):
+                if not active_buy and predictions[row.Index][0] > row.close:
+                    active_buy = True
+                    trades.append(Trade.new("BUY", self.baseCoin, coin, row))
+                elif active_buy and predictions[row.Index][0] < row.close:
+                    active_buy = False
+                    trades.append(Trade.new("SELL", self.baseCoin, coin, row))
+                elif trades and self.check_stop_loss(trades[-1].price, row.close):
+                    trades.append(Trade.new("SELL", self.baseCoin, coin, row, "Stop loss"))
+                    active_buy = False
+        return trades
 
     def calculate_rsi(self, high, low, df, coin):
         trades = []

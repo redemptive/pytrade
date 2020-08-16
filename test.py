@@ -5,6 +5,7 @@
 import unittest
 import time
 import os
+import shutil
 
 from pytrade import Pytrade
 from obj.LiveTrading import LiveTrading
@@ -13,7 +14,19 @@ from obj.Data import Data
 class TestMachineLearning(unittest.TestCase):
 
     def test_new_model(self):
-        pytrade = Pytrade(["mlstrategy", "--new", "--epochs", "1"])
+        pytrade = Pytrade(["mlstrategy", "--new", "--epochs", "1", "--name", "test_ml"])
+        self.assertTrue("test_ml.json" in os.listdir("strategies"))
+        self.assertTrue("test_ml" in os.listdir("ml_strategies"))
+        os.remove("strategies/test_ml.json")
+        shutil.rmtree("ml_strategies/test_ml")
+
+    def test_ml_backtest(self):
+        Pytrade(["mlstrategy", "--new", "--epochs", "1", "--name", "test_ml"])
+        self.assertTrue("test_ml.json" in os.listdir("strategies"))
+        self.assertTrue("test_ml" in os.listdir("ml_strategies"))
+
+        Pytrade(["backtest", "-m", "-s", "test_ml", "-t", "1 month ago"])
+
 
 class TestData(unittest.TestCase):
 

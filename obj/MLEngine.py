@@ -16,31 +16,42 @@ class MLEngine:
         self.scaler = data["scaler"]
         self.details = data["details"]
 
+    def predict(self, df):
+        dataset = self.scaler.transform(MLEngine.process_dataframe(df, "close_time", self.details["features"]))
+        print(dataset)
+        data, labels = MLEngine.prep_data(dataset, self.details["history_size"], len(dataset), self.details["history_size"])
+        print(labels)
+        return self.scaler.inverse_transform(self.model.predict(labels))
+
     @staticmethod
     def prep_data(dataset, start, end, history_size):
         data = []
         labels = []
         for i in range(start, end):
-            data.append(dataset[i, 0])
+            data.append(dataset[i, :])
             labels.append(dataset[i - history_size:i, :])
 
         return np.array(data), np.array(labels)
 
     @staticmethod
-    def build(df, feature_names, index, epochs, graph, name:str="test"):
-        os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
+    def process_dataframe(df, index, feature_names):
         features = df[feature_names]
         features.index = df[index]
+
+        return features
+
+    @staticmethod
+    def build(df, feature_names, index, epochs, graph, name:str="test"):
+        os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
+        features = MLEngine.process_dataframe(df, index, feature_names)
 
         TRAIN_SPLIT = int(len(df) / 3)
         BATCH_SIZE = 1
         BUFFER_SIZE = 10000
 
         scaler = MinMaxScaler()
-        features_minmax = scaler.fit(features)
-        dataset = scaler.transform(features)
+        dataset = scaler.fit_transform(features)
 
-        future_target = 1
         history_size = 7
 
         data_train, labels_train = MLEngine.prep_data(dataset, history_size, len(dataset) - TRAIN_SPLIT, history_size)
@@ -64,29 +75,30 @@ class MLEngine:
         model.add(tf.keras.layers.Dropout(0.2))
 
         model.add(tf.keras.layers.LSTM(16, activation='relu'))
-        model.add(tf.keras.layers.Dense(future_target))
+        model.add(tf.keras.layers.Dense(data_train.shape[1]))
 
         model.compile(optimizer=tf.keras.optimizers.RMSprop(clipvalue=1.0), loss='mae')
 
         EVALUATION_INTERVAL = 1000
 
-        # print(labels_val)
-        # print(data_val)
+        history = model.fit(train_data, epochs=epochs, steps_per_epoch=EVALUATION_INTERVAL, validation_data=val_data, validation_steps=50)
 
-        # history =
-        model.fit(train_data, epochs=epochs, steps_per_epoch=EVALUATION_INTERVAL, validation_data=val_data, validation_steps=50)
+        print(scaler.inverse_transform(model.predict(labels_val)))
+        print(scaler.inverse_transform(data_val))
 
         if graph:
-            plt.plot(model.predict(labels_val))
-            plt.plot(data_val)
+            plt.plot(scaler.inverse_transform(model.predict(labels_val))[:, 0])
+            plt.plot(scaler.inverse_transform(data_val)[1:, 0])
             plt.show()
 
         details = {
+            "history": history.history,
             "epochs": epochs,
-            "features": feature_names
+            "features": feature_names,
+            "history_size": history_size
         }
 
-        MLEngine.save_model(name, model, features_minmax, details)
+        MLEngine.save_model(name, model, scaler, details)
 
         return MLEngine(name)
 

@@ -10,7 +10,6 @@ from datetime import datetime
 from binance.client import Client
 import matplotlib.pyplot as plt
 import numpy as np
-import ta
 
 # Custom objects
 from obj.Strategy import Strategy
@@ -59,17 +58,33 @@ class Pytrade():
         if args.new:
             self.binance_login()
 
-            klines = self.client.get_historical_klines(symbol="BTCUSDT", interval="1h", start_str="1 years ago")
+            klines = self.client.get_historical_klines(
+                symbol=f"{args.tradeCoins}{args.baseCoin}",
+                interval=args.interval,
+                start_str=args.time
+            )
 
             df = Data.process_raw_historic_data(klines)
 
-            df["RSI"] = ta.momentum.RSIIndicator(close=df["close"], n=14).rsi()
-
             df = df.dropna(axis=0)
 
-            features = ["close", "low", "high", "volume", "no_trades"]
+            features = ["close", "low", "high"]
 
-            MLEngine.build(df, features, "close_time", args.epochs, args.graph)
+            model = MLEngine.build(df, features, "close_time", args.epochs, args.graph, args.name)
+            print(model.predict(df))
+
+            strategy = {}
+            strategy["tradeCoins"] = args.tradeCoins.split(",")
+            strategy["baseCoin"] = args.baseCoin
+            strategy["interval"] = args.interval
+            strategy["indicator_name"] = "ML"
+            strategy["strategy"] = "ML"
+            strategy["stop_loss"] = args.stopLoss
+
+            with open(f"strategies/{args.name}.json", "w") as outfile:
+                json.dump(strategy, outfile)
+
+            print(f"New ml strategy {args.name} created in strategies/{args.name}.json")
 
     def get_args(self, args:list=[]):
         parser = argparse.ArgumentParser(description="This is PYTRADE")
@@ -95,14 +110,21 @@ class Pytrade():
         parser_backtest = subparsers.add_parser('backtest', help='Backtest strategies')
         parser_backtest.add_argument("-t", "--time", default="1 week ago", help="How long ago to backtest from. Defaults to '1 week ago'")
         parser_backtest.add_argument("-s", "--strategies", default="all", type=str, help="A comma separated list of strategies to test. Defaults to 'all' which will test them all")
+        parser_backtest.add_argument("-m", "--mlstrategy", action="store_true", help="Enable if you are using an mlstrategy")
         parser_backtest.add_argument("-g", "--graph", action="store_true", help="Graph the backtest")
         parser_backtest.set_defaults(func=self.run_backtest)
 
         # ML Strategy command
         parser_mlstrategy = subparsers.add_parser("mlstrategy", help="Test feature for machine learning strategies")
         parser_mlstrategy.add_argument("-n", "--new", action="store_true", help="Create a new machine learning model")
+        parser_mlstrategy.add_argument("-N", "--name", default="test", type=str, help="The name for the new machine learning model")
         parser_mlstrategy.add_argument("-g", "--graph", action="store_true", help="Graph the predictions against actual")
         parser_mlstrategy.add_argument("-e", "--epochs", default=20, type=int, help="Graph the predictions against actual")
+        parser_mlstrategy.add_argument("-T", "--tradeCoins", default="ETH", type=str, help="This is a comma separated list of the coins you wish to trade. Defaults to ETH")
+        parser_mlstrategy.add_argument("-B", "--baseCoin", default="BTC", type=str, help="This is the base coin you will use to pay. Defaults to BTC")
+        parser_mlstrategy.add_argument("-i", "--interval", default="1d", type=str, help="The interval for the trades. Defaults to '1d'")
+        parser_mlstrategy.add_argument("-L", "--stopLoss", default=3, type=int, help="The stop loss percentage. Ie the amount to be losing on a trade before cancelling. Defaults to 3")
+        parser_mlstrategy.add_argument("-t", "--time", default="1 year ago", help="How long ago to gather data to create the model. Defaults to '1 year ago'")
         parser_mlstrategy.set_defaults(func=self.mlstrategy)
 
         # live command
@@ -204,20 +226,21 @@ class Pytrade():
         results:dict = {}
 
         for strategy_name in strategies:
-            print(f"\n-------{strategy_name}-------")
             strategy_data = Pytrade.load_strategy(strategy_name)
+            if strategy_data["indicator_name"] != "ML":
+                print(f"\n-------{strategy_name}-------")
 
-            klines = self.get_multi_coin_klines(strategy_data)
+                klines = self.get_multi_coin_klines(strategy_data)
 
-            print("\nInitialising strategy...\n")
-            strategy = Strategy(klines, **strategy_data)
+                print("\nInitialising strategy...\n")
+                strategy = Strategy(klines, **strategy_data)
 
-            print("Backtesting strategy...\n")
-            backtest = Backtest(100, strategy, self.args.verbose, self.args.graph)
+                print("Backtesting strategy...\n")
+                backtest = Backtest(100, strategy, self.args.verbose, self.args.graph)
 
-            results[strategy_name] = backtest.amount
+                results[strategy_name] = backtest.amount
 
-            print("---------------------")
+                print("---------------------")
 
         if len(results) > 1:
             best_performer = ""
