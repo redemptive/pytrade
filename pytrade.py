@@ -227,20 +227,19 @@ class Pytrade():
 
         for strategy_name in strategies:
             strategy_data = Pytrade.load_strategy(strategy_name)
-            if strategy_data["indicator_name"] != "ML":
-                print(f"\n-------{strategy_name}-------")
+            print(f"\n-------{strategy_name}-------")
 
-                klines = self.get_multi_coin_klines(strategy_data)
+            klines = self.get_multi_coin_klines(strategy_data)
 
-                print("\nInitialising strategy...\n")
-                strategy = Strategy(klines, **strategy_data)
+            print("\nInitialising strategy...\n")
+            strategy = Strategy(klines, **strategy_data)
 
-                print("Backtesting strategy...\n")
-                backtest = Backtest(100, strategy, self.args.verbose, self.args.graph)
+            print("Backtesting strategy...\n")
+            backtest = Backtest(100, strategy, self.args.verbose, self.args.graph)
 
-                results[strategy_name] = backtest.amount
+            results[strategy_name] = backtest.amount
 
-                print("---------------------")
+            print("---------------------")
 
         if len(results) > 1:
             best_performer = ""
