@@ -9,7 +9,7 @@ from obj.MLEngine import MLEngine
 
 class Strategy:
 
-    def __init__(self, klines:dict, indicator_name:str, strategy:str, tradeCoins:list, baseCoin:str, interval:str, stop_loss:int):
+    def __init__(self, klines:dict, indicator_name:str, strategy:str, tradeCoins:list, baseCoin:str, interval:str, stop_loss:int, ml_name:str="test"):
         self.indicator:str = indicator_name
         self.strategy:str = strategy
         self.tradeCoins:str = tradeCoins
@@ -18,6 +18,7 @@ class Strategy:
         self.stop_loss:str = stop_loss
         self.trades:list = []
         self.data:dict = {}
+        self.ml_name = ml_name
         self.refresh(klines)
 
     def filter_trades(self, trades):
@@ -62,7 +63,7 @@ class Strategy:
             self.data[coin]["ichimoku_base_line"] = cloud.ichimoku_base_line()
             self.data[coin]["ichimoku_conversion_line"] = cloud.ichimoku_conversion_line()
         elif self.indicator == "ML":
-            self.model = MLEngine("test")
+            self.model = MLEngine(self.ml_name)
         else: return None
 
     def calculate_strategy(self, df, coin):

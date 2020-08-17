@@ -70,7 +70,7 @@ class Pytrade():
 
             features = ["close", "low", "high"]
 
-            model = MLEngine.build(df, features, "close_time", args.epochs, args.graph, args.name)
+            model = MLEngine.build(df, features, "close_time", args.epochs, args.batchSize, args.graph, args.name)
             print(model.predict(df))
 
             strategy = {}
@@ -119,7 +119,8 @@ class Pytrade():
         parser_mlstrategy.add_argument("-n", "--new", action="store_true", help="Create a new machine learning model")
         parser_mlstrategy.add_argument("-N", "--name", default="test", type=str, help="The name for the new machine learning model")
         parser_mlstrategy.add_argument("-g", "--graph", action="store_true", help="Graph the predictions against actual")
-        parser_mlstrategy.add_argument("-e", "--epochs", default=20, type=int, help="Graph the predictions against actual")
+        parser_mlstrategy.add_argument("-e", "--epochs", default=20, type=int, help="Number of epochs during model training")
+        parser_mlstrategy.add_argument("-b", "--batchSize", default=1, type=int, help="Batch size of the training data")
         parser_mlstrategy.add_argument("-T", "--tradeCoins", default="ETH", type=str, help="This is a comma separated list of the coins you wish to trade. Defaults to ETH")
         parser_mlstrategy.add_argument("-B", "--baseCoin", default="BTC", type=str, help="This is the base coin you will use to pay. Defaults to BTC")
         parser_mlstrategy.add_argument("-i", "--interval", default="1d", type=str, help="The interval for the trades. Defaults to '1d'")
@@ -232,6 +233,9 @@ class Pytrade():
             klines = self.get_multi_coin_klines(strategy_data)
 
             print("\nInitialising strategy...\n")
+            if strategy_data["indicator_name"] == "ML":
+                strategy_data["ml_name"] = strategy_name
+
             strategy = Strategy(klines, **strategy_data)
 
             print("Backtesting strategy...\n")

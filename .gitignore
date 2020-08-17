@@ -1,4 +1,5 @@
 */__pycache__
 __pycache__
-ml_strategies
+ml_strategies/personal*
+strategies/personal*
 strategies/power.json

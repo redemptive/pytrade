@@ -1,11 +1,13 @@
+# Standard imports
 import os
 import json
-import tensorflow as tf
-from sklearn.preprocessing import MinMaxScaler
-# from sklearn.externals import joblib
+from joblib import dump, load
+
+# External imports
 import matplotlib.pyplot as plt
 import numpy as np
-from joblib import dump, load
+import tensorflow as tf
+from sklearn.preprocessing import MinMaxScaler
 
 
 class MLEngine:
@@ -13,8 +15,8 @@ class MLEngine:
     def __init__(self, model_name:str):
         data = MLEngine.load_model(model_name)
         self.model:object = data["model"]
-        self.scaler = data["scaler"]
-        self.details = data["details"]
+        self.scaler:object = data["scaler"]
+        self.details:dict = data["details"]
 
     def predict(self, df):
         dataset = self.scaler.transform(MLEngine.process_dataframe(df, "close_time", self.details["features"]))
@@ -23,8 +25,7 @@ class MLEngine:
 
     @staticmethod
     def prep_data(dataset, start, end, history_size):
-        data = []
-        labels = []
+        data, labels = [], []
         for i in range(start, end):
             data.append(dataset[i, :])
             labels.append(dataset[i - history_size:i, :])
@@ -35,16 +36,14 @@ class MLEngine:
     def process_dataframe(df, index, feature_names):
         features = df[feature_names]
         features.index = df[index]
-
         return features
 
     @staticmethod
-    def build(df, feature_names, index, epochs, graph, name:str="test"):
+    def build(df, feature_names, index, epochs, batch_size, graph, name):
         os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
         features = MLEngine.process_dataframe(df, index, feature_names)
 
         TRAIN_SPLIT = int(len(df) / 3)
-        BATCH_SIZE = 1
         BUFFER_SIZE = 10000
 
         scaler = MinMaxScaler()
@@ -56,10 +55,10 @@ class MLEngine:
         data_val, labels_val = MLEngine.prep_data(dataset, len(dataset) - TRAIN_SPLIT, len(dataset), history_size)
 
         train_data = tf.data.Dataset.from_tensor_slices((labels_train, data_train))
-        train_data = train_data.cache().shuffle(BUFFER_SIZE).batch(BATCH_SIZE).repeat()
+        train_data = train_data.cache().shuffle(BUFFER_SIZE).batch(batch_size).repeat()
 
         val_data = tf.data.Dataset.from_tensor_slices((labels_val, data_val))
-        val_data = val_data.batch(BATCH_SIZE).repeat()
+        val_data = val_data.batch(batch_size).repeat()
 
         model = tf.keras.models.Sequential()
 
@@ -90,7 +89,8 @@ class MLEngine:
             "history": history.history,
             "epochs": epochs,
             "features": feature_names,
-            "history_size": history_size
+            "history_size": history_size,
+            "batch_size": batch_size
         }
 
         MLEngine.save_model(name, model, scaler, details)
@@ -115,7 +115,3 @@ class MLEngine:
 
         with open(f"./ml_strategies/{name}/details.json", "w") as outfile:
             json.dump(details, outfile)
-
-    @staticmethod
-    def create_time_steps(length):
-        return list(range(-length, 0))
