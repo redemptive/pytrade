@@ -181,7 +181,7 @@ class Pytrade():
         with open(f'strategies/{name}.json') as raw:
             print(f"Loading strategy {name}")
             strategy_data = json.load(raw)
-            strategy_data["strategy_name"] = name
+            strategy_data["name"] = name
             return strategy_data
 
     def binance_login(self):
@@ -234,7 +234,7 @@ class Pytrade():
             klines = self.get_multi_coin_klines(strategy_data)
 
             print("\nInitialising strategy...\n")
-            
+
             strategy = Strategy(klines, **strategy_data)
 
             print("Backtesting strategy...\n")
