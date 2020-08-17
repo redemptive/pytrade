@@ -180,7 +180,9 @@ class Pytrade():
     def load_strategy(name):
         with open(f'strategies/{name}.json') as raw:
             print(f"Loading strategy {name}")
-            return json.load(raw)
+            strategy_data = json.load(raw)
+            strategy_data["strategy_name"] = name
+            return strategy_data
 
     def binance_login(self):
         # Get credentials from env if they are there and quit if they aren't
@@ -232,9 +234,7 @@ class Pytrade():
             klines = self.get_multi_coin_klines(strategy_data)
 
             print("\nInitialising strategy...\n")
-            if strategy_data["indicator_name"] == "ML":
-                strategy_data["ml_name"] = strategy_name
-
+            
             strategy = Strategy(klines, **strategy_data)
 
             print("Backtesting strategy...\n")
