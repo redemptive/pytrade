@@ -1,1 +1,1 @@
-{"tradeCoins": ["XMR", "ETH", "XRP"], "baseCoin": "USDT", "interval": "1h", "indicator_name": "CLOUD", "strategy": "INORABOVE", "stop_loss": 2}
+{"tradeCoins": ["XMR", "ETH", "XRP"], "baseCoin": "USDT", "interval": "1d", "indicator_name": "CLOUD", "strategy": "INORABOVE", "stop_loss": 2}

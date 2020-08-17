@@ -4,11 +4,12 @@ import numpy as np
 
 from obj.Trade import Trade
 from obj.Data import Data
+from obj.MLEngine import MLEngine
 
 
 class Strategy:
 
-    def __init__(self, klines:dict, indicator_name:str, strategy:str, tradeCoins:list, baseCoin:str, interval:str, stop_loss:int):
+    def __init__(self, klines:dict, name:str, indicator_name:str, strategy:str, tradeCoins:list, baseCoin:str, interval:str, stop_loss:int):
         self.indicator:str = indicator_name
         self.strategy:str = strategy
         self.tradeCoins:str = tradeCoins
@@ -17,6 +18,7 @@ class Strategy:
         self.stop_loss:str = stop_loss
         self.trades:list = []
         self.data:dict = {}
+        self.name:str = name
         self.refresh(klines)
 
     def filter_trades(self, trades):
@@ -37,9 +39,7 @@ class Strategy:
         for coin in self.tradeCoins:
             self.data[coin] = Data.process_raw_historic_data(klines[coin])
             self.calculate_indicator(coin)
-            new_trades = self.calculate_strategy(self.data[coin], coin)
-            if new_trades:
-                trades += new_trades
+            trades += self.calculate_strategy(self.data[coin], coin)
 
         self.filter_trades(trades)
 
@@ -62,6 +62,8 @@ class Strategy:
             self.data[coin]["ichimoku_b"] = cloud.ichimoku_b()
             self.data[coin]["ichimoku_base_line"] = cloud.ichimoku_base_line()
             self.data[coin]["ichimoku_conversion_line"] = cloud.ichimoku_conversion_line()
+        elif self.indicator == "ML":
+            self.model = MLEngine(self.name)
         else: return None
 
     def calculate_strategy(self, df, coin):
@@ -91,7 +93,7 @@ class Strategy:
                 for row in df.itertuples():
                     if np.isnan(row.ichimoku_a) or np.isnan(row.ichimoku_b): pass
                     else:
-                        if (row.close > row.ichimoku_a or row.close > row.ichimoku_b) and not active_buy:
+                        if (row.close > row.ichimoku_a or row.close > row.ichimoku_b) and row.close > row.ichimoku_conversion_line and not active_buy:
                             active_buy = True
                             trades.append(Trade.new("BUY", self.baseCoin, coin, row))
                         elif (row.close < row.ichimoku_a or row.close < row.ichimoku_b) and active_buy and above_cloud:
@@ -152,7 +154,26 @@ class Strategy:
         elif self.indicator == "RSI":
             if self.strategy == "7030": return self.calculate_rsi(70, 30, df, coin)
             elif self.strategy == "8020": return self.calculate_rsi(80, 20, df, coin)
+        elif self.indicator == "ML":
+            return self.calculate_ml(df, coin)
         else: return None
+
+    def calculate_ml(self, df, coin):
+        active_buy = False
+        predictions = self.model.predict(df)
+        trades = []
+        for row in df.itertuples(index=True):
+            if row.Index < len(predictions):
+                if not active_buy and predictions[row.Index][0] > row.close:
+                    active_buy = True
+                    trades.append(Trade.new("BUY", self.baseCoin, coin, row))
+                elif active_buy and predictions[row.Index][0] < row.close:
+                    active_buy = False
+                    trades.append(Trade.new("SELL", self.baseCoin, coin, row))
+                elif trades and self.check_stop_loss(trades[-1].price, row.close):
+                    trades.append(Trade.new("SELL", self.baseCoin, coin, row, "Stop loss"))
+                    active_buy = False
+        return trades
 
     def calculate_rsi(self, high, low, df, coin):
         trades = []

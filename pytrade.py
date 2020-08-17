@@ -15,6 +15,8 @@ import numpy as np
 from obj.Strategy import Strategy
 from obj.Backtest import Backtest
 from obj.LiveTrading import LiveTrading
+from obj.Data import Data
+from obj.MLEngine import MLEngine
 
 
 class Pytrade():
@@ -52,6 +54,38 @@ class Pytrade():
         else:
             print("No option selected")
 
+    def mlstrategy(self, args:list=[]):
+        if args.new:
+            self.binance_login()
+
+            klines = self.client.get_historical_klines(
+                symbol=f"{args.tradeCoins}{args.baseCoin}",
+                interval=args.interval,
+                start_str=args.time
+            )
+
+            df = Data.process_raw_historic_data(klines)
+
+            df = df.dropna(axis=0)
+
+            features = ["close", "low", "high"]
+
+            model = MLEngine.build(df, features, "close_time", args.epochs, args.batchSize, args.graph, args.name)
+            print(model.predict(df))
+
+            strategy = {}
+            strategy["tradeCoins"] = args.tradeCoins.split(",")
+            strategy["baseCoin"] = args.baseCoin
+            strategy["interval"] = args.interval
+            strategy["indicator_name"] = "ML"
+            strategy["strategy"] = "ML"
+            strategy["stop_loss"] = args.stopLoss
+
+            with open(f"strategies/{args.name}.json", "w") as outfile:
+                json.dump(strategy, outfile)
+
+            print(f"New ml strategy {args.name} created in strategies/{args.name}.json")
+
     def get_args(self, args:list=[]):
         parser = argparse.ArgumentParser(description="This is PYTRADE")
 
@@ -78,6 +112,20 @@ class Pytrade():
         parser_backtest.add_argument("-s", "--strategies", default="all", type=str, help="A comma separated list of strategies to test. Defaults to 'all' which will test them all")
         parser_backtest.add_argument("-g", "--graph", action="store_true", help="Graph the backtest")
         parser_backtest.set_defaults(func=self.run_backtest)
+
+        # ML Strategy command
+        parser_mlstrategy = subparsers.add_parser("mlstrategy", help="Test feature for machine learning strategies")
+        parser_mlstrategy.add_argument("-n", "--new", action="store_true", help="Create a new machine learning model")
+        parser_mlstrategy.add_argument("-N", "--name", default="test", type=str, help="The name for the new machine learning model")
+        parser_mlstrategy.add_argument("-g", "--graph", action="store_true", help="Graph the predictions against actual")
+        parser_mlstrategy.add_argument("-e", "--epochs", default=20, type=int, help="Number of epochs during model training")
+        parser_mlstrategy.add_argument("-b", "--batchSize", default=1, type=int, help="Batch size of the training data")
+        parser_mlstrategy.add_argument("-T", "--tradeCoins", default="ETH", type=str, help="This is a comma separated list of the coins you wish to trade. Defaults to ETH")
+        parser_mlstrategy.add_argument("-B", "--baseCoin", default="BTC", type=str, help="This is the base coin you will use to pay. Defaults to BTC")
+        parser_mlstrategy.add_argument("-i", "--interval", default="1d", type=str, help="The interval for the trades. Defaults to '1d'")
+        parser_mlstrategy.add_argument("-L", "--stopLoss", default=3, type=int, help="The stop loss percentage. Ie the amount to be losing on a trade before cancelling. Defaults to 3")
+        parser_mlstrategy.add_argument("-t", "--time", default="1 year ago", help="How long ago to gather data to create the model. Defaults to '1 year ago'")
+        parser_mlstrategy.set_defaults(func=self.mlstrategy)
 
         # live command
         parser_live = subparsers.add_parser("live", help="Live trading with strategies")
@@ -132,7 +180,9 @@ class Pytrade():
     def load_strategy(name):
         with open(f'strategies/{name}.json') as raw:
             print(f"Loading strategy {name}")
-            return json.load(raw)
+            strategy_data = json.load(raw)
+            strategy_data["name"] = name
+            return strategy_data
 
     def binance_login(self):
         # Get credentials from env if they are there and quit if they aren't
@@ -178,12 +228,13 @@ class Pytrade():
         results:dict = {}
 
         for strategy_name in strategies:
-            print(f"\n-------{strategy_name}-------")
             strategy_data = Pytrade.load_strategy(strategy_name)
+            print(f"\n-------{strategy_name}-------")
 
             klines = self.get_multi_coin_klines(strategy_data)
 
             print("\nInitialising strategy...\n")
+
             strategy = Strategy(klines, **strategy_data)
 
             print("Backtesting strategy...\n")

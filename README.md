@@ -132,3 +132,31 @@ optional arguments:
                         What interval to get the recieved data for
   -g, --graph           Graph the recieved data
 ```
+
+### ./pytrade.py mlstrategy
+```
+usage: pytrade.py mlstrategy [-h] [-n] [-N NAME] [-g] [-e EPOCHS] [-b BATCHSIZE] [-T TRADECOINS]
+                             [-B BASECOIN] [-i INTERVAL] [-L STOPLOSS] [-t TIME]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -n, --new             Create a new machine learning model
+  -N NAME, --name NAME  The name for the new machine learning model
+  -g, --graph           Graph the predictions against actual
+  -e EPOCHS, --epochs EPOCHS
+                        Number of epochs during model training
+  -b BATCHSIZE, --batchSize BATCHSIZE
+                        Batch size of the training data
+  -T TRADECOINS, --tradeCoins TRADECOINS
+                        This is a comma separated list of the coins you wish to trade. Defaults to
+                        ETH
+  -B BASECOIN, --baseCoin BASECOIN
+                        This is the base coin you will use to pay. Defaults to BTC
+  -i INTERVAL, --interval INTERVAL
+                        The interval for the trades. Defaults to '1d'
+  -L STOPLOSS, --stopLoss STOPLOSS
+                        The stop loss percentage. Ie the amount to be losing on a trade before
+                        cancelling. Defaults to 3
+  -t TIME, --time TIME  How long ago to gather data to create the model. Defaults to '1 year ago'
+
+```
