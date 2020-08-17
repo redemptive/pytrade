@@ -25,7 +25,8 @@ class LiveTrading:
         for coin in self.strategy.tradeCoins:
             if self.verbose: print(f"Getting precision for {coin}")
             self.precision[coin] = self.get_precision(coin)
-            self.klines[coin] = []
+            if self.klines == {}:
+                self.klines[coin] = []
 
         self.active_order:bool = False
         self.open_trade:bool = False
