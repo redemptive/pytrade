@@ -110,7 +110,6 @@ class Pytrade():
         parser_backtest = subparsers.add_parser('backtest', help='Backtest strategies')
         parser_backtest.add_argument("-t", "--time", default="1 week ago", help="How long ago to backtest from. Defaults to '1 week ago'")
         parser_backtest.add_argument("-s", "--strategies", default="all", type=str, help="A comma separated list of strategies to test. Defaults to 'all' which will test them all")
-        parser_backtest.add_argument("-m", "--mlstrategy", action="store_true", help="Enable if you are using an mlstrategy")
         parser_backtest.add_argument("-g", "--graph", action="store_true", help="Graph the backtest")
         parser_backtest.set_defaults(func=self.run_backtest)
 

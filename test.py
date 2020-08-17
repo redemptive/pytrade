@@ -25,7 +25,7 @@ class TestMachineLearning(unittest.TestCase):
         self.assertTrue("test_ml.json" in os.listdir("strategies"))
         self.assertTrue("test_ml" in os.listdir("ml_strategies"))
 
-        Pytrade(["backtest", "-m", "-s", "test_ml", "-t", "1 month ago"])
+        Pytrade(["backtest", "-s", "test_ml", "-t", "1 month ago"])
 
 
 class TestData(unittest.TestCase):

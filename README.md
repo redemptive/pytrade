@@ -96,7 +96,7 @@ optional arguments:
 
 ### ./pytrade.py backtest
 ```
-usage: pytrade.py backtest [-h] [-t TIME] [-s STRATEGIES] [-m] [-g]
+usage: pytrade.py backtest [-h] [-t TIME] [-s STRATEGIES] [-g]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -104,7 +104,6 @@ optional arguments:
   -s STRATEGIES, --strategies STRATEGIES
                         A comma separated list of strategies to test. Defaults to 'all' which will
                         test them all
-  -m, --mlstrategy      Enable if you are using an mlstrategy
   -g, --graph           Graph the backtest
 ```
 
